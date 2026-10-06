@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { COLORS, isHidden, type Card, type HiddenCard, type Level, type Noble, type TokenColor } from '../shared/game';
 import { POINTS_SYMBOL, TIER_NAMES, houseName, place, resource } from '../shared/theme';
 import { armsUrl, crestUrl } from './art/heraldry';
@@ -58,7 +59,7 @@ export function CardView({ card, size, onClick, selected, highlight, fly, hidden
       </div>
       <div className="card-cost">
         {COLORS.filter((c) => card.cost[c] > 0).map((c) => (
-          <span key={c} className={cx('pip', c)}><Num>{card.cost[c]}</Num></span>
+          <span key={c} className={cx('pip', c)} title={`${card.cost[c]} ${resource(c, card.cost[c])}`}><Num>{card.cost[c]}</Num></span>
         ))}
       </div>
     </div>
@@ -92,7 +93,7 @@ export function NobleView({ noble, onClick, highlight, size, fly }: { noble: Nob
       <span className="noble-pts">{noble.points}<i>{POINTS_SYMBOL}</i></span>
       <div className="noble-req">
         {COLORS.filter((c) => noble.req[c] > 0).map((c) => (
-          <span key={c} className={cx('req', c)}><Num>{noble.req[c]}</Num></span>
+          <span key={c} className={cx('req', c)} title={`${noble.req[c]} ${resource(c)} holdings`}><Num>{noble.req[c]}</Num></span>
         ))}
       </div>
     </div>
@@ -158,5 +159,43 @@ export function Crest({ arms, size = 28, title }: { arms: Arms; size?: number; t
       title={title}
       style={{ width: size, height: size * 1.1, backgroundImage: armsUrl(arms) }}
     />
+  );
+}
+
+/**
+ * A thumbnail of someone's reserved card that shows the full card on hover,
+ * focus or tap, so its price and renown can be read.
+ */
+export function CardPeek({ card, fly }: { card: Card; fly?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [box, setBox] = useState<DOMRect | null>(null);
+  const show = () => ref.current && setBox(ref.current.getBoundingClientRect());
+  const hide = () => setBox(null);
+  const W = 140;
+  const H = W * 1.4 + 26;
+  const left = box ? (box.right + 12 + W < innerWidth ? box.right + 12 : Math.max(8, box.left - W - 12)) : 0;
+  const top = box ? Math.max(8, Math.min(box.top + box.height / 2 - H / 2, innerHeight - H - 8)) : 0;
+  return (
+    <span
+      ref={ref}
+      className="peek"
+      tabIndex={0}
+      role="button"
+      aria-label={`Reserved: ${place(card.level, card.color)}`}
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      onFocus={show}
+      onBlur={hide}
+      onClick={() => (box ? hide() : show())}
+    >
+      <CardView card={card} size="mini" fly={fly} />
+      {box && createPortal(
+        <div className="peek-pop" style={{ left, top, width: W }}>
+          <CardView card={card} />
+          <div className="peek-name">{place(card.level, card.color)}</div>
+        </div>,
+        document.body,
+      )}
+    </span>
   );
 }

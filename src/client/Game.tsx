@@ -7,7 +7,7 @@ import type { ClientMessage, RoomInfo } from '../shared/protocol';
 import { Announcer, useAnnouncements } from './Announcer';
 import { Confetti, useFx } from './fx';
 import { fanfare, isMuted, setMuted } from './sfx';
-import { CardView, Chip, ChipStack, Crest, DeckView, NobleView, Num, ResourceIcon, cx } from './pieces';
+import { CardPeek, CardView, Chip, ChipStack, Crest, DeckView, NobleView, Num, ResourceIcon, cx } from './pieces';
 import { PRESET_ARMS, type Arms } from '../shared/heraldry';
 import { GAME_NAME, POINTS_SYMBOL, RESOURCES, resource } from '../shared/theme';
 
@@ -304,7 +304,9 @@ function OpponentPanel({ player: p, isCurrent, acting, offline, left, bot, arms,
       <div className="opp-foot">
         <span className="muted small">{tokenTotal(p.tokens)}/{MAX_TOKENS} resources · {p.cardCount} holdings</span>
         <span className="opp-reserved" data-fly={`reserve-${p.id}`}>
-          {p.reserved.map((c, i) => <CardView key={isHidden(c) ? `h${i}` : c.id} card={c} size="mini" fly={isHidden(c) ? undefined : `card-${c.id}`} />)}
+          {p.reserved.map((c, i) => (isHidden(c)
+            ? <CardView key={`h${i}`} card={c} size="mini" />
+            : <CardPeek key={c.id} card={c} fly={`card-${c.id}`} />))}
         </span>
       </div>
       {isCurrent && <div className="thinking-bar" />}
