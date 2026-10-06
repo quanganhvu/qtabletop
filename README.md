@@ -1,6 +1,8 @@
 # Stronghold
 
-A medieval take on the Splendor-style engine-building board game, for 2–4 friends. Create a room, share the link, and play in any browser on desktop or mobile.
+A medieval take on the Splendor-style engine-building board game, for 2–4 friends.
+
+**Play it:** https://stronghold.splendor-online.workers.dev Create a room, share the link, and play in any browser on desktop or mobile.
 
 **Stack:** TypeScript · React 19 + Vite 8 · Cloudflare Workers + Durable Objects (via `partyserver`) · Vitest
 
@@ -26,7 +28,7 @@ You need a free Cloudflare account. No credit card is required.
 
 ```sh
 npx wrangler login   # one time
-npm run deploy       # → https://splendor.<your-subdomain>.workers.dev
+npm run deploy       # → https://stronghold.<your-subdomain>.workers.dev
 ```
 
 The site, the API and every game room run on the Workers free plan. Rooms sleep when idle, and their state stays saved.
