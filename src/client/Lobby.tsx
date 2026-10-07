@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { Arms } from '../shared/heraldry';
 import { ArmsPicker } from './ArmsPicker';
 import { RuleBook } from './RuleBook';
+import { UiIcon } from './UiIcon';
 import { setArms } from './identity';
 import { Crest } from './pieces';
 
@@ -57,7 +58,7 @@ export function Lobby({ room, you, send, leave, notify }: {
           ))}
         </ul>
         {isHost && room.players.length < MAX_PLAYERS && (
-          <button className="btn wide" onClick={() => send({ type: 'addBot' })}>🤖 Add a bot</button>
+          <button className="btn wide" onClick={() => send({ type: 'addBot' })}><UiIcon name="helm" />Add a bot</button>
         )}
 
         {isHost ? (
@@ -67,7 +68,7 @@ export function Lobby({ room, you, send, leave, notify }: {
         ) : (
           <p className="muted">Waiting for the host to start the game…</p>
         )}
-        <button className="btn ghost wide" onClick={() => setRules(true)}>📖 Rules</button>
+        <button className="btn ghost wide" onClick={() => setRules(true)}><UiIcon name="book" />Rules</button>
         <button className="btn ghost wide" onClick={leave}>Leave room</button>
       </div>
       {rules && <RuleBook onClose={() => setRules(false)} />}

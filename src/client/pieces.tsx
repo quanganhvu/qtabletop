@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { COLORS, isHidden, type Card, type HiddenCard, type Level, type Noble, type TokenColor } from '../shared/game';
 import { POINTS_SYMBOL, TIER_NAMES, houseName, place, resource } from '../shared/theme';
@@ -163,22 +163,36 @@ export function Crest({ arms, size = 28, title }: { arms: Arms; size?: number; t
 }
 
 /**
- * A thumbnail of someone's reserved card that shows the full card on hover,
- * focus or tap, so its price and renown can be read.
+ * A small reserved card that shows the full card on hover or focus, so its price
+ * and renown can be read. Without `onClick`, a tap toggles the full view (phones).
+ * With `onClick` (your own reserved cards), a tap selects the card, and the full
+ * view stays open while it is `selected`.
  */
-export function CardPeek({ card, fly }: { card: Card; fly?: string }) {
+export function CardPeek({ card, fly, size = 'mini', onClick, selected, highlight }: {
+  card: Card;
+  fly?: string;
+  size?: 'mini' | 'small';
+  onClick?: () => void;
+  selected?: boolean;
+  highlight?: boolean;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
   const [box, setBox] = useState<DOMRect | null>(null);
-  const show = () => ref.current && setBox(ref.current.getBoundingClientRect());
-  const hide = () => setBox(null);
-  const W = 140;
+  const [hovered, setHovered] = useState(false);
+  const show = () => { if (ref.current) setBox(ref.current.getBoundingClientRect()); setHovered(true); };
+  const hide = () => setHovered(false);
+  const open = hovered || !!selected;
+  useEffect(() => {
+    if (selected && ref.current) setBox(ref.current.getBoundingClientRect());
+  }, [selected]);
+  const W = 150;
   const H = W * 1.4 + 26;
   const left = box ? (box.right + 12 + W < innerWidth ? box.right + 12 : Math.max(8, box.left - W - 12)) : 0;
   const top = box ? Math.max(8, Math.min(box.top + box.height / 2 - H / 2, innerHeight - H - 8)) : 0;
   return (
     <span
       ref={ref}
-      className="peek"
+      className={cx('peek', size)}
       tabIndex={0}
       role="button"
       aria-label={`Reserved: ${place(card.level, card.color)}`}
@@ -186,10 +200,10 @@ export function CardPeek({ card, fly }: { card: Card; fly?: string }) {
       onMouseLeave={hide}
       onFocus={show}
       onBlur={hide}
-      onClick={() => (box ? hide() : show())}
+      onClick={onClick ?? (() => (hovered ? hide() : show()))}
     >
-      <CardView card={card} size="mini" fly={fly} />
-      {box && createPortal(
+      <CardView card={card} size={size} fly={fly} selected={selected} highlight={highlight} />
+      {open && box && createPortal(
         <div className="peek-pop" style={{ left, top, width: W }}>
           <CardView card={card} />
           <div className="peek-name">{place(card.level, card.color)}</div>

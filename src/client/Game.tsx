@@ -6,6 +6,7 @@ import {
 import type { ClientMessage, RoomInfo } from '../shared/protocol';
 import { Announcer, useAnnouncements } from './Announcer';
 import { RuleBook } from './RuleBook';
+import { UiIcon } from './UiIcon';
 import { Confetti, useFx } from './fx';
 import { fanfare, isMuted, setMuted } from './sfx';
 import { CardPeek, CardView, Chip, ChipStack, Crest, DeckView, NobleView, Num, ResourceIcon, cx } from './pieces';
@@ -137,13 +138,13 @@ export function Game({ room, game, you, act, send, leave, notify }: {
         <div className="brand"><ResourceIcon color="gold" /> <span>{GAME_NAME}</span> <span className="room-tag">{room.code}</span></div>
         <div key={game.log.length} className="ticker">{game.log[game.log.length - 1]}</div>
         <div className="status"><Status game={game} myTurn={myTurn} /></div>
-        <button className="btn ghost small" onClick={toggleMute} title={muted ? 'Sound off' : 'Sound on'}>{muted ? '🔇' : '🔊'}</button>
-        <button className="btn ghost small" onClick={() => setRulesOpen(true)}>📖 Rules</button>
-        <button className="btn ghost small" onClick={() => setLogOpen(!logOpen)}>📜 Log</button>
+        <button className="btn ghost small" onClick={toggleMute} title={muted ? 'Sound is off' : 'Sound is on'} aria-label={muted ? 'Turn sound on' : 'Turn sound off'}><UiIcon name={muted ? 'bellOff' : 'bell'} /></button>
+        <button className="btn ghost small" onClick={() => setRulesOpen(true)} title="Rules" aria-label="Rules"><UiIcon name="book" /><span className="btn-label">Rules</span></button>
+        <button className="btn ghost small" onClick={() => setLogOpen(!logOpen)} title="Game log" aria-label="Game log"><UiIcon name="scroll" /><span className="btn-label">Log</span></button>
         {isHost && game.phase !== 'over' && (
-          <button className="btn ghost small" title="Stop this game and return everyone to the lobby" onClick={endGame}>End game</button>
+          <button className="btn ghost small" title="Stop this game and return everyone to the lobby" onClick={endGame} aria-label="End game"><UiIcon name="swords" /><span className="btn-label">End game</span></button>
         )}
-        <button className="btn ghost small" title={me ? 'Leave the table; a bot takes over your seat' : 'Stop watching'} onClick={leaveGame}>⎋ Leave</button>
+        <button className="btn ghost small" title={me ? 'Leave the table; a bot takes over your seat' : 'Stop watching'} onClick={leaveGame} aria-label="Leave"><UiIcon name="door" /><span className="btn-label">Leave</span></button>
       </header>
 
       <div className="arena">
@@ -397,7 +398,7 @@ function Dock({ dockRef, narrow, game, me, arms, myTurn, sel, update, reset, doA
             if (!c) return <div key={`empty${i}`} className="card small reserve-slot">reserve</div>;
             if (isHidden(c)) return <CardView key={`h${i}`} card={c} size="small" />;
             return (
-              <CardView
+              <CardPeek
                 key={c.id}
                 card={c}
                 size="small"

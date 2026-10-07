@@ -3,6 +3,8 @@ import { MAX_NAME_LENGTH } from '../shared/protocol';
 import { Crest, ResourceIcon } from './pieces';
 import { ArmsPicker } from './ArmsPicker';
 import { RuleBook } from './RuleBook';
+import { UiIcon } from './UiIcon';
+import { WaxSeal } from './WaxSeal';
 import { GAME_NAME } from '../shared/theme';
 import { getArms, getName, randomRoomCode, setArms, setName } from './identity';
 
@@ -30,7 +32,6 @@ export function Home({ connect, notify, busy }: {
       <form className="panel home" onSubmit={(e) => { e.preventDefault(); go(!code); }}>
         <div className="home-crest"><ResourceIcon color="gold" /></div>
         <h1>{GAME_NAME}</h1>
-        <div className="byline">by Q</div>
         <p className="muted tagline">Raise a realm from quarry to cathedral. Win the noble houses. 2–4 players.</p>
         <label htmlFor="name">Your name and arms</label>
         <div className="identity-row">
@@ -59,8 +60,9 @@ export function Home({ connect, notify, busy }: {
           />
           <button type="button" className="btn" disabled={busy} onClick={() => go(false)}>Join</button>
         </div>
-        <button type="button" className="rules-link" onClick={() => setRules(true)}>📖 Read the rules</button>
+        <button type="button" className="rules-link" onClick={() => setRules(true)}><UiIcon name="book" />Read the rules</button>
       </form>
+      <div className="seal"><WaxSeal /></div>
       {rules && <RuleBook onClose={() => setRules(false)} />}
       {picking && (
         <ArmsPicker
