@@ -796,3 +796,13 @@ input { font-family: var(--serif); font-size: 1.05rem; }
   .topbar .btn-label { display: none; }
   .topbar .btn.small { padding: 0.45em 0.6em; }
 }
+
+/* ---- Adding a bot: pick its rank ---- */
+.add-bot { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: rgb(0 0 0 / 0.18); }
+.add-bot-label { display: flex; align-items: center; justify-content: center; gap: 0.45em; font-family: var(--display); font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.add-bot-levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.add-bot-levels .btn { flex-direction: column; gap: 1px; padding: 0.45em 0.4em; }
+.lvl-rank { font-size: 0.9rem; }
+.lvl-label { font-family: var(--serif); font-style: italic; font-size: 0.8rem; letter-spacing: 0; color: var(--muted); text-transform: none; }
+.opp-name { display: flex; align-items: center; min-width: 0; }
+.opp-name .bot-tag { flex-shrink: 0; }

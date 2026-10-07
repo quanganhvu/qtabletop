@@ -1,5 +1,6 @@
 import type { Action, GameView } from './game';
 import type { Arms } from './heraldry';
+import type { BotLevel } from './botLevels';
 
 export const PARTY = 'splendor-room'; // kebab-case of the SplendorRoom Durable Object binding
 export const MAX_PLAYERS = 4;
@@ -15,7 +16,7 @@ export type ClientMessage =
   /** Host only: stop the game in progress and return everyone to the lobby. */
   | { type: 'endGame' }
   /** Host only, in the lobby. */
-  | { type: 'addBot' }
+  | { type: 'addBot'; level?: BotLevel }
   | { type: 'removePlayer'; playerId: string }
   /** A spectator takes over the seat of a player who disconnected. */
   | { type: 'claimSeat'; seatId: string };
@@ -25,7 +26,7 @@ export interface RoomInfo {
   hostId: string | null;
   started: boolean;
   /** `left`: a human who left mid-game; a stand-in bot is playing their seat. */
-  players: { id: string; name: string; connected: boolean; bot: boolean; left: boolean; arms: Arms }[];
+  players: { id: string; name: string; connected: boolean; bot: boolean; level?: BotLevel; left: boolean; arms: Arms }[];
 }
 
 export type ServerMessage =

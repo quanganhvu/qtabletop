@@ -7,6 +7,7 @@ import type { ClientMessage, RoomInfo } from '../shared/protocol';
 import { Announcer, useAnnouncements } from './Announcer';
 import { RuleBook } from './RuleBook';
 import { UiIcon } from './UiIcon';
+import { BOT_LEVEL_INFO, type BotLevel } from '../shared/botLevels';
 import { Confetti, useFx } from './fx';
 import { fanfare, isMuted, setMuted } from './sfx';
 import { CardPeek, CardView, Chip, ChipStack, Crest, DeckView, NobleView, Num, ResourceIcon, cx } from './pieces';
@@ -158,6 +159,7 @@ export function Game({ room, game, you, act, send, leave, notify }: {
             offline={!seat(p.id)?.connected}
             left={!!seat(p.id)?.left}
             bot={!!seat(p.id)?.bot}
+            level={seat(p.id)?.level}
             arms={armsOf(p.id)}
             canClaim={!me}
             onClaim={() => send({ type: 'claimSeat', seatId: p.id })}
@@ -276,8 +278,9 @@ function Status({ game, myTurn }: { game: GameView; myTurn: boolean }) {
   );
 }
 
-function OpponentPanel({ player: p, isCurrent, acting, offline, left, bot, arms, canClaim, onClaim }: {
+function OpponentPanel({ player: p, isCurrent, acting, offline, left, bot, level, arms, canClaim, onClaim }: {
   player: PlayerView;
+  level?: BotLevel;
   left: boolean;
   arms: Arms;
   isCurrent: boolean;
@@ -291,7 +294,7 @@ function OpponentPanel({ player: p, isCurrent, acting, offline, left, bot, arms,
     <div className={cx('opponent', isCurrent && 'current', acting && 'acting', offline && 'offline')}>
       <div className="opp-head">
         <Crest arms={arms} size={24} />
-        <span className="opp-name">{p.name}{bot && <span className="tag muted bot-tag" title={left ? 'Left the game; a bot is playing for them' : undefined}>{left ? 'left · bot' : 'bot'}</span>}</span>
+        <span className="opp-name">{p.name}{bot && <span className="tag muted bot-tag" title={left ? 'Left the game; a bot is playing for them' : undefined}>{left ? 'left · bot' : BOT_LEVEL_INFO[level ?? 'normal'].rank}</span>}</span>
         {offline && <span className="tag muted">offline</span>}
         {(offline || left) && canClaim && <button className="btn tiny" onClick={onClaim}>Take seat</button>}
         {p.nobles.length > 0 && <span className="opp-nobles" title={`${p.nobles.length} noble house(s)`}>{p.nobles.map((n) => <NobleView key={n.id} noble={n} size="mini" />)}</span>}

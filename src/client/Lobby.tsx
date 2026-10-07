@@ -5,6 +5,7 @@ import type { Arms } from '../shared/heraldry';
 import { ArmsPicker } from './ArmsPicker';
 import { RuleBook } from './RuleBook';
 import { UiIcon } from './UiIcon';
+import { BOT_LEVELS, BOT_LEVEL_INFO } from '../shared/botLevels';
 import { setArms } from './identity';
 import { Crest } from './pieces';
 
@@ -49,7 +50,7 @@ export function Lobby({ room, you, send, leave, notify }: {
                 : <Crest arms={p.arms} size={30} />}
               <span className="lp-name">{p.name}{p.id === you && <span className="muted"> (you)</span>}</span>
               {p.id === room.hostId && <span className="tag">host</span>}
-              {p.bot && <span className="tag muted">bot</span>}
+              {p.bot && <span className="tag muted" title={BOT_LEVEL_INFO[p.level ?? 'normal'].blurb}>bot · {BOT_LEVEL_INFO[p.level ?? 'normal'].rank}</span>}
               {!p.connected && <span className="tag muted">offline</span>}
               {isHost && p.id !== you && (
                 <button className="btn tiny ghost" title={`Remove ${p.name}`} onClick={() => send({ type: 'removePlayer', playerId: p.id })}>✕</button>
@@ -58,7 +59,17 @@ export function Lobby({ room, you, send, leave, notify }: {
           ))}
         </ul>
         {isHost && room.players.length < MAX_PLAYERS && (
-          <button className="btn wide" onClick={() => send({ type: 'addBot' })}><UiIcon name="helm" />Add a bot</button>
+          <div className="add-bot">
+            <div className="add-bot-label"><UiIcon name="helm" />Add a bot</div>
+            <div className="add-bot-levels">
+              {BOT_LEVELS.map((level) => (
+                <button key={level} className="btn" title={BOT_LEVEL_INFO[level].blurb} onClick={() => send({ type: 'addBot', level })}>
+                  <span className="lvl-rank">{BOT_LEVEL_INFO[level].rank}</span>
+                  <span className="lvl-label">{BOT_LEVEL_INFO[level].label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         {isHost ? (

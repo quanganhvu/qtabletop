@@ -1,5 +1,5 @@
 import { Server, routePartykitRequest, type Connection, type WSMessage } from 'partyserver';
-import { chooseBotAction } from '../shared/bot';
+import { chooseLeveledAction, isBotLevel, type BotLevel } from '../shared/botLevels';
 import { BOT_NAMES } from '../shared/theme';
 import { PRESET_ARMS, sanitizeArms, type Arms } from '../shared/heraldry';
 import { applyAction, createGame, RuleError, viewFor, type GameState } from '../shared/game';
@@ -13,6 +13,8 @@ interface Seat {
   id: string;
   name: string;
   bot?: boolean;
+  /** Bot difficulty; stand-in bots for players who left play at 'normal'. */
+  level?: BotLevel;
   arms?: Arms;
   /** A human who left mid-game; a bot plays their seat until they come back. */
   left?: boolean;
@@ -169,7 +171,8 @@ export class SplendorRoom extends Server<Env> {
         const name = BOT_NAMES.find((n) => !d.players.some((p) => p.name === n)) ?? 'Bot';
         const taken = new Set(d.players.map((p) => JSON.stringify(p.arms)));
         const arms = PRESET_ARMS.find((a) => !taken.has(JSON.stringify(a))) ?? PRESET_ARMS[0];
-        d.players.push({ id: `bot-${crypto.randomUUID()}`, name, bot: true, arms });
+        const level = isBotLevel(msg.level) ? msg.level : 'normal';
+        d.players.push({ id: `bot-${crypto.randomUUID()}`, name, bot: true, level, arms });
         break;
       }
 
@@ -227,7 +230,7 @@ export class SplendorRoom extends Server<Env> {
     const botId = g.players[g.current].id;
     if (!this.seat(botId)?.bot) return;
     try {
-      applyAction(g, botId, chooseBotAction(g, botId));
+      applyAction(g, botId, chooseLeveledAction(this.seat(botId)?.level ?? 'normal', g, botId));
     } catch (err) {
       // Should never happen (the bot is tested to only make legal moves), but never let a bot stall the game.
       console.error('Bot move failed', err);
@@ -275,7 +278,7 @@ export class SplendorRoom extends Server<Env> {
       hostId: this.data.hostId,
       started: !!this.data.game,
       players: this.data.players.map((p) => ({
-        id: p.id, name: p.name, bot: !!p.bot, left: !!p.left, arms: sanitizeArms(p.arms), connected: this.isOnline(p.id, excludeConnId),
+        id: p.id, name: p.name, bot: !!p.bot, level: p.bot ? (p.level ?? 'normal') : undefined, left: !!p.left, arms: sanitizeArms(p.arms), connected: this.isOnline(p.id, excludeConnId),
       })),
     };
   }

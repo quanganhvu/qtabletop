@@ -109,6 +109,7 @@ export function RuleBook({ onClose }: { onClose: () => void }) {
             <li>Watch which resources the noble houses want, and build toward two of them at once.</li>
             <li>Reserve a valuable card an opponent is about to buy: it denies them and earns you a crown.</li>
             <li>Green-ringed cards are ones you can afford right now.</li>
+            <li>Bots come in three ranks: a <b>Squire</b> is easy, a <b>Knight</b> a fair match, and a <b>Lord</b> plays its best every turn.</li>
           </ul>
         </section>
 
