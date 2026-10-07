@@ -30,19 +30,49 @@ export function chooseBotAction(state: GameState, botId: string, rng: () => numb
     return { type: 'buy', cardId: best.id };
   }
 
-  // 2. Collect gems toward the target card, unless that would just mean discarding.
   const canReserve = me.reserved.length < MAX_RESERVED;
+  const onBoard = boardCards(state);
+
+  // 2. Reserve for a gold crown when it is the smart play.
+  if (canReserve) {
+    const reservePick = smartReserve(state, me, bonus, target, onBoard);
+    if (reservePick) return { type: 'reserve', cardId: reservePick.id };
+  }
+
+  // 3. Collect gems toward the target card, unless that would just mean discarding.
   const take = chooseTake(state, me, bonus, target, rng);
   const room = MAX_TOKENS - tokenTotal(me.tokens);
   if (take && (take.colors.length <= room || !canReserve)) return take;
 
-  // 3. Hands full: reserve the target (or the best card on the board) for a gold.
+  // 4. Hands full: reserve the target (or the best card on the board) for a gold.
   if (canReserve) {
-    const onBoard = boardCards(state);
     const pick = target && onBoard.includes(target) ? target : onBoard.length ? maxBy(onBoard, (c) => cardValue(state, me, bonus, c)) : null;
     if (pick) return { type: 'reserve', cardId: pick.id };
   }
   return take ?? { type: 'pass' };
+}
+
+/**
+ * When to reserve instead of taking resources. Simulated games showed reserving
+ * just to finish a card early is a losing trade (three resources usually do the
+ * same job), so the bot reserves only when it clearly pays:
+ * - the target is one resource short and that resource is gone from the
+ *   treasury, so only a gold crown can complete it;
+ * - an opponent could buy a valuable card next turn that we cannot, so we take it first.
+ */
+function smartReserve(state: GameState, me: PlayerState, bonus: Gems, target: Card | null, onBoard: Card[]): Card | null {
+  if (target && onBoard.includes(target) && state.bank.gold > 0) {
+    const { total, need } = shortfall(me, bonus, target);
+    const onlyGoldHelps = COLORS.some((c) => need[c] > 0 && state.bank[c] === 0);
+    if (total === 1 && onlyGoldHelps) return target;
+  }
+  const opponents = state.players.filter((p) => p.id !== me.id);
+  const threats = onBoard.filter((c) => c.points >= 3 && opponents.some((p) => paymentFor(p.tokens, bonuses(p), c)));
+  if (threats.length) {
+    const worst = maxBy(threats, (c) => c.points * 10 - shortfall(me, bonus, c).total);
+    if (worst.points >= 4 || shortfall(me, bonus, worst).total <= 4) return worst;
+  }
+  return null;
 }
 
 function boardCards(state: GameState): Card[] {

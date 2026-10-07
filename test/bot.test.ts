@@ -51,3 +51,33 @@ describe('bot', () => {
     expect(tokens.gold).toBe(0);
   });
 });
+
+describe('bot and gold crowns', () => {
+  const base = () => {
+    const g = createGame([{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], seeded(3));
+    for (const l of [1, 2, 3] as const) g.board[l] = g.board[l].map(() => null);
+    return g;
+  };
+
+  it('spends gold to buy a card it could not afford otherwise', () => {
+    const g = base();
+    g.board[2][0] = { id: 'prize', level: 2, color: 'red', points: 2, cost: { ...emptyGems(), red: 3 } };
+    g.players[0].tokens = { ...g.players[0].tokens, red: 2, gold: 1 };
+    expect(chooseBotAction(g, 'a')).toEqual({ type: 'buy', cardId: 'prize' });
+  });
+
+  it('reserves for a crown when gold is the only way to finish its card', () => {
+    const g = base();
+    g.board[2][0] = { id: 'prize', level: 2, color: 'red', points: 3, cost: { ...emptyGems(), red: 3 } };
+    g.players[0].tokens = { ...g.players[0].tokens, red: 2 };
+    g.bank.red = 0;
+    expect(chooseBotAction(g, 'a')).toEqual({ type: 'reserve', cardId: 'prize' });
+  });
+
+  it("reserves a valuable card an opponent is about to buy", () => {
+    const g = base();
+    g.board[3][0] = { id: 'big', level: 3, color: 'black', points: 4, cost: { ...emptyGems(), black: 7 } };
+    g.players[1].tokens = { ...g.players[1].tokens, black: 7 };
+    expect(chooseBotAction(g, 'a')).toEqual({ type: 'reserve', cardId: 'big' });
+  });
+});

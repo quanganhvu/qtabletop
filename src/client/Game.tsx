@@ -5,6 +5,7 @@ import {
 } from '../shared/game';
 import type { ClientMessage, RoomInfo } from '../shared/protocol';
 import { Announcer, useAnnouncements } from './Announcer';
+import { RuleBook } from './RuleBook';
 import { Confetti, useFx } from './fx';
 import { fanfare, isMuted, setMuted } from './sfx';
 import { CardPeek, CardView, Chip, ChipStack, Crest, DeckView, NobleView, Num, ResourceIcon, cx } from './pieces';
@@ -65,6 +66,7 @@ export function Game({ room, game, you, act, send, leave, notify }: {
 
   const [showResults, setShowResults] = useState(true);
   const [logOpen, setLogOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const narrow = useNarrow();
   const dockRef = useDockHeight();
   const meIndex = game.players.findIndex((p) => p.id === you);
@@ -136,6 +138,7 @@ export function Game({ room, game, you, act, send, leave, notify }: {
         <div key={game.log.length} className="ticker">{game.log[game.log.length - 1]}</div>
         <div className="status"><Status game={game} myTurn={myTurn} /></div>
         <button className="btn ghost small" onClick={toggleMute} title={muted ? 'Sound off' : 'Sound on'}>{muted ? '🔇' : '🔊'}</button>
+        <button className="btn ghost small" onClick={() => setRulesOpen(true)}>📖 Rules</button>
         <button className="btn ghost small" onClick={() => setLogOpen(!logOpen)}>📜 Log</button>
         {isHost && game.phase !== 'over' && (
           <button className="btn ghost small" title="Stop this game and return everyone to the lobby" onClick={endGame}>End game</button>
@@ -242,6 +245,8 @@ export function Game({ room, game, you, act, send, leave, notify }: {
       {fx.layer}
 
       <Announcer item={announcement} game={game} you={you} armsOf={armsOf} />
+
+      {rulesOpen && <RuleBook onClose={() => setRulesOpen(false)} />}
 
       {logOpen && <LogDrawer entries={game.log} onClose={() => setLogOpen(false)} />}
 

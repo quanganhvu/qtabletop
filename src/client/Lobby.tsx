@@ -3,6 +3,7 @@ import { MAX_PLAYERS } from '../shared/protocol';
 import { useState } from 'react';
 import type { Arms } from '../shared/heraldry';
 import { ArmsPicker } from './ArmsPicker';
+import { RuleBook } from './RuleBook';
 import { setArms } from './identity';
 import { Crest } from './pieces';
 
@@ -17,6 +18,7 @@ export function Lobby({ room, you, send, leave, notify }: {
   const link = `${location.origin}${location.pathname}?room=${room.code}`;
   const enough = room.players.length >= 2;
   const [picking, setPicking] = useState(false);
+  const [rules, setRules] = useState(false);
   const mine = room.players.find((p) => p.id === you);
   const changeArms = (arms: Arms) => {
     setArms(arms);
@@ -65,8 +67,10 @@ export function Lobby({ room, you, send, leave, notify }: {
         ) : (
           <p className="muted">Waiting for the host to start the game…</p>
         )}
+        <button className="btn ghost wide" onClick={() => setRules(true)}>📖 Rules</button>
         <button className="btn ghost wide" onClick={leave}>Leave room</button>
       </div>
+      {rules && <RuleBook onClose={() => setRules(false)} />}
       {picking && mine && <ArmsPicker value={mine.arms} onChange={changeArms} onClose={() => setPicking(false)} />}
     </div>
   );
