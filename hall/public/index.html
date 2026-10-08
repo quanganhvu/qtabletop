@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1a120d" />
+  <title>Q's Tabletop</title>
+  <meta name="description" content="Board games for friends, curated by Q. Create a room, share the link, play in any browser." />
+  <link rel="icon" href="art/seal.svg" />
+  <style>
+    @font-face { font-family: 'Cinzel'; font-weight: 600; font-display: swap; src: url(fonts/cinzel-latin-600-normal.woff2) format('woff2'); }
+    @font-face { font-family: 'Cinzel'; font-weight: 700; font-display: swap; src: url(fonts/cinzel-latin-700-normal.woff2) format('woff2'); }
+    @font-face { font-family: 'EB Garamond'; font-weight: 400; font-display: swap; src: url(fonts/eb-garamond-latin-400-normal.woff2) format('woff2'); }
+    @font-face { font-family: 'EB Garamond'; font-weight: 400; font-style: italic; font-display: swap; src: url(fonts/eb-garamond-latin-400-italic.woff2) format('woff2'); }
+    @font-face { font-family: 'EB Garamond'; font-weight: 500; font-display: swap; src: url(fonts/eb-garamond-latin-500-normal.woff2) format('woff2'); }
+
+    :root {
+      --bg: #120c08;
+      --panel: rgb(28 20 14 / 0.88);
+      --line: rgb(201 160 58 / 0.22);
+      --hair: rgb(201 160 58 / 0.45);
+      --text: #efe4cc;
+      --muted: #b3a081;
+      --accent: #c9a03a;
+      --accent-bright: #e8c66e;
+      --display: 'Cinzel', 'Trajan Pro', Georgia, serif;
+      --serif: 'EB Garamond', Garamond, Georgia, serif;
+      color-scheme: dark;
+      font-family: var(--serif);
+      color: var(--text);
+      background: var(--bg);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100dvh;
+      background:
+        radial-gradient(ellipse 85% 70% at 50% 35%, transparent 30%, rgb(0 0 0 / 0.55) 100%),
+        repeating-linear-gradient(90deg, rgb(0 0 0 / 0.08) 0 1px, transparent 1px 7px, rgb(255 255 255 / 0.015) 7px 9px, transparent 9px 23px),
+        repeating-linear-gradient(90deg, transparent 0 199px, rgb(0 0 0 / 0.35) 199px 201px),
+        linear-gradient(180deg, #3a2618, #2a1b11 60%, #1d130c);
+      background-attachment: fixed;
+      background-color: var(--bg);
+    }
+    main { max-width: 1040px; margin: 0 auto; padding: 56px 16px 72px; }
+
+    header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; margin-bottom: 44px; }
+    .seal { width: 112px; height: 112px; transform: rotate(-9deg); filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.55)); animation: stamp 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.25) both; }
+    .kicker { font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); margin-top: 6px; }
+    h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(2.4rem, 7vw, 3.6rem); letter-spacing: 0.08em; color: var(--accent-bright); text-shadow: 0 2px 18px rgb(201 160 58 / 0.3); }
+    .tagline { margin: 0; font-style: italic; font-size: 1.25rem; color: var(--muted); max-width: 34em; }
+    .rule { width: min(320px, 70%); height: 1px; margin-top: 10px; background: linear-gradient(90deg, transparent, var(--hair), transparent); }
+
+    .games { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px; }
+    .game {
+      position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 30px 22px 24px; text-align: center;
+      color: inherit; text-decoration: none; border-radius: 14px;
+      background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--tint) 30%, transparent), transparent 70%), var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4), inset 0 0 0 5px rgb(0 0 0 / 0.18), inset 0 0 0 6px rgb(201 160 58 / 0.14), 0 10px 30px rgb(0 0 0 / 0.35);
+      transition: transform 0.2s ease, border-color 0.2s, box-shadow 0.2s;
+      animation: rise 0.6s ease-out both; animation-delay: calc(var(--i) * 90ms + 200ms);
+    }
+    a.game:hover, a.game:focus-visible {
+      transform: translateY(-5px); border-color: var(--hair); outline: none;
+      box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4), inset 0 0 0 5px rgb(0 0 0 / 0.18), inset 0 0 0 6px rgb(232 198 110 / 0.35), 0 18px 40px rgb(0 0 0 / 0.5), 0 0 30px rgb(201 160 58 / 0.18);
+    }
+    .emblem { width: 96px; height: 96px; display: grid; place-items: center; }
+    .emblem img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.5)); }
+    .emblem img.tile { width: 76%; height: 76%; box-shadow: 0 0 0 2px #b8902f, 0 8px 18px rgb(0 0 0 / 0.55); border-radius: 3px; }
+    .game h2 { margin: 4px 0 0; font-family: var(--display); font-weight: 700; font-size: 1.5rem; letter-spacing: 0.08em; color: var(--accent-bright); }
+    .game p { margin: 0; font-size: 1.12rem; line-height: 1.35; flex: 1; }
+    .meta { font-family: var(--display); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+    .play {
+      margin-top: 6px; font-family: var(--display); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.08em;
+      padding: 0.6em 1.5em; border-radius: 8px; color: #2a1d06; border: 1px solid #f0d58a;
+      background: linear-gradient(180deg, #e8c66e, #c9a03a 55%, #a07c24); box-shadow: 0 2px 10px rgb(201 160 58 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.35);
+    }
+    .game.soon { opacity: 0.6; }
+    .game.soon .emblem { filter: grayscale(0.5); }
+    .game.soon .play { background: none; border-color: var(--line); color: var(--muted); box-shadow: none; font-style: normal; }
+
+    footer { margin-top: 56px; text-align: center; color: var(--muted); font-style: italic; font-size: 1.05rem; }
+    footer b { font-style: normal; font-family: var(--display); font-size: 0.85rem; letter-spacing: 0.08em; color: var(--accent); }
+
+    @keyframes stamp { from { opacity: 0; transform: rotate(-9deg) scale(1.6); } }
+    @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+    @media (max-width: 600px) {
+      main { padding-top: 36px; }
+      header { margin-bottom: 30px; }
+      .seal { width: 88px; height: 88px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <img class="seal" src="art/seal.svg" alt="A red wax seal stamped with Q" />
+      <div class="kicker">Board games for friends</div>
+      <h1>Q's Tabletop</h1>
+      <p class="tagline">Pick a game, create a room and share the link. Everyone plays in their own browser, on any device.</p>
+      <div class="rule"></div>
+    </header>
+
+    <section class="games" id="games" aria-label="Games"></section>
+
+    <footer>Curated by <b>Q</b> · rooms keep your game saved, so you can come back any time.</footer>
+  </main>
+
+  <script>
+    // The games, in the order they appear. `worker` is each game's Cloudflare
+    // Worker name; its link is <worker>.<this account's subdomain>.workers.dev.
+    // Add a game here (and set soon: false once it's deployed).
+    const GAMES = [
+      { worker: 'stronghold', name: 'Stronghold', emblem: 'art/stronghold.svg', tint: '#3f6b46',
+        blurb: 'Raise a realm from quarry to cathedral and win the noble houses.', players: '2–4 players', time: '30 min' },
+      { worker: 'mercia', name: 'Mercia', emblem: 'art/mercia.svg', tile: true, tint: '#8d9757',
+        blurb: 'Lay the land tile by tile. Raise cities, roads and abbeys.', players: '2–5 players', time: '35 min' },
+      { worker: 'skyline', name: 'Skyline', emblem: 'art/skyline.svg', tint: '#2f4f8a', soon: true,
+        blurb: 'Found hotel chains, merge them and trade shares to grow rich.', players: '2–6 players', time: '60 min' },
+      { worker: 'le-havre', name: 'Red Harbor', emblem: 'art/red-harbor.svg', tint: '#8e3a24', soon: true,
+        blurb: 'Build the economy of a young colony on Mars.', players: '2–5 players', time: '90 min' },
+    ];
+
+    // On workers.dev, sibling games share this page's subdomain (q.<sub>.workers.dev).
+    const DEFAULT_SUBDOMAIN = 'tabletop-online';
+    const host = location.hostname;
+    const sub = host.endsWith('.workers.dev') ? host.split('.').slice(1, -2).join('.') : DEFAULT_SUBDOMAIN;
+    const link = (worker) => `https://${worker}.${sub}.workers.dev/`;
+
+    const el = (tag, attrs = {}, ...children) => {
+      const node = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) k === 'style' ? node.style.cssText = v : node.setAttribute(k, v);
+      node.append(...children);
+      return node;
+    };
+
+    const list = document.getElementById('games');
+    GAMES.forEach((g, i) => {
+      const card = el(g.soon ? 'div' : 'a', {
+        class: `game${g.soon ? ' soon' : ''}`,
+        style: `--tint: ${g.tint}; --i: ${i}`,
+        ...(g.soon ? { 'aria-disabled': 'true' } : { href: link(g.worker) }),
+      },
+        el('div', { class: 'emblem' }, el('img', { src: g.emblem, alt: '', class: g.tile ? 'tile' : '' })),
+        el('h2', {}, g.name),
+        el('div', { class: 'meta' }, `${g.players} · ${g.time}`),
+        el('p', {}, g.blurb),
+        el('span', { class: 'play' }, g.soon ? 'In the workshop' : 'Play'),
+      );
+      list.append(card);
+    });
+  </script>
+</body>
+</html>

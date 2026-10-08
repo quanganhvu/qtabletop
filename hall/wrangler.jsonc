@@ -1,0 +1,7 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  // A static page: no server code, just the files in public/. Free on the Workers plan.
+  "name": "q",
+  "compatibility_date": "2026-09-01",
+  "assets": { "directory": "./public" }
+}
