@@ -1,0 +1,76 @@
+import { useState, type CSSProperties } from 'react';
+import type { ClientMessage, RoomInfo } from '../shared/protocol';
+import { MAX_PLAYERS } from '../shared/protocol';
+import { BOT_LEVELS, BOT_LEVEL_INFO } from '../shared/botLevels';
+import { PLAYER_COLORS } from '../shared/theme';
+import { RuleBook } from './RuleBook';
+
+export function Lobby({ room, you, send, leave, notify }: {
+  room: RoomInfo;
+  you: string | null;
+  send: (msg: ClientMessage) => void;
+  leave: () => void;
+  notify: (msg: string) => void;
+}) {
+  const isHost = room.hostId === you;
+  const link = `${location.origin}${location.pathname}?room=${room.code}`;
+  const enough = room.players.length >= 2;
+  const [rules, setRules] = useState(false);
+
+  const copy = () => {
+    navigator.clipboard?.writeText(link).then(() => notify('Link copied'), () => notify('Copy failed: select the link manually'));
+  };
+
+  return (
+    <div className="center">
+      <div className="panel lobby">
+        <div className="muted small eyebrow">Room code</div>
+        <div className="room-code">{room.code}</div>
+        <div className="share">
+          <input readOnly value={link} aria-label="Room link" onFocus={(e) => e.target.select()} />
+          <button className="btn" onClick={copy}>Copy link</button>
+        </div>
+
+        <h2>Players <span className="muted">({room.players.length}/{MAX_PLAYERS})</span></h2>
+        <ul className="lobby-players">
+          {room.players.map((p, i) => (
+            <li key={p.id} className={p.connected ? '' : 'offline'} style={{ '--player': PLAYER_COLORS[i % PLAYER_COLORS.length] } as CSSProperties}>
+              <span className="dot" />
+              <span className="lp-name">{p.name}{p.id === you && <span className="muted"> (you)</span>}</span>
+              {p.id === room.hostId && <span className="tag">host</span>}
+              {p.bot && <span className="tag muted" title={BOT_LEVEL_INFO[p.level ?? 'normal'].blurb}>bot · {BOT_LEVEL_INFO[p.level ?? 'normal'].rank}</span>}
+              {!p.connected && <span className="tag muted">offline</span>}
+              {isHost && p.id !== you && (
+                <button className="btn tiny ghost" title={`Remove ${p.name}`} onClick={() => send({ type: 'removePlayer', playerId: p.id })}>✕</button>
+              )}
+            </li>
+          ))}
+        </ul>
+        {isHost && room.players.length < MAX_PLAYERS && (
+          <div className="add-bot">
+            <div className="add-bot-label">Add a bot</div>
+            <div className="add-bot-levels">
+              {BOT_LEVELS.map((level) => (
+                <button key={level} className="btn" title={BOT_LEVEL_INFO[level].blurb} onClick={() => send({ type: 'addBot', level })}>
+                  <span className="lvl-rank">{BOT_LEVEL_INFO[level].rank}</span>
+                  <span className="lvl-label">{BOT_LEVEL_INFO[level].label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isHost ? (
+          <button className="btn primary wide" disabled={!enough} onClick={() => send({ type: 'start' })}>
+            {enough ? 'Start game' : 'Waiting for players…'}
+          </button>
+        ) : (
+          <p className="muted">Waiting for the host to start the game…</p>
+        )}
+        <button className="btn ghost wide" onClick={() => setRules(true)}>Rules</button>
+        <button className="btn ghost wide" onClick={leave}>Leave room</button>
+      </div>
+      {rules && <RuleBook onClose={() => setRules(false)} />}
+    </div>
+  );
+}
