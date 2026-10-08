@@ -512,7 +512,7 @@ input { font-family: var(--serif); font-size: 1.05rem; }
 .board-tools .btn { min-width: 34px; font-size: 1rem; padding: 0.3em 0.6em; }
 
 /* ---- Your tile in hand ---- */
-.hand { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-left: auto; }
+.hand { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .hand-label { font-family: var(--display); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgb(232 198 110 / 0.8); }
 .hand-row { display: flex; align-items: center; gap: 8px; }
 .hand-tile { width: 132px; height: 132px; animation: reveal 0.5s cubic-bezier(0.3, 0.8, 0.3, 1.15) both; }
@@ -535,7 +535,12 @@ input { font-family: var(--serif); font-size: 1.05rem; }
   background: radial-gradient(ellipse at 50% 0%, rgb(232 198 110 / 0.28), transparent 70%), linear-gradient(180deg, #3a2410, #1a1008);
   border-color: var(--accent-bright); box-shadow: 0 0 50px rgb(201 160 58 / 0.45), 0 18px 50px rgb(0 0 0 / 0.6), inset 0 0 0 5px rgb(201 160 58 / 0.35);
 }
-.ann-card.turn.mine .ann-title { font-size: 2rem; color: var(--accent-bright); text-shadow: 0 0 24px rgb(232 198 110 / 0.5); }
+.ann-card.turn.mine .ann-title { font-size: 2.6rem; color: var(--accent-bright); text-shadow: 0 0 24px rgb(232 198 110 / 0.5); }
+.announcer.center { top: 0; bottom: 0; align-items: center; }
+.announcer.center .ann-card.turn { padding: 18px 48px; }
+.ann-card.score.mine { padding: 18px 44px 20px; border-color: var(--accent-bright);
+  box-shadow: 0 0 50px rgb(201 160 58 / 0.4), 0 18px 50px rgb(0 0 0 / 0.6), inset 0 0 0 5px rgb(201 160 58 / 0.35); }
+.ann-card.score.mine .ann-points { font-size: 3rem; }
 .ann-title { font-family: var(--display); font-weight: 700; font-size: 1.35rem; letter-spacing: 0.04em; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .ann-who { display: inline-flex; align-items: center; gap: 8px; color: var(--accent-bright); }
 .ann-sub { color: var(--text); font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 1.1rem; letter-spacing: 0; }
@@ -608,7 +613,7 @@ input { font-family: var(--serif); font-size: 1.05rem; }
   .followers .meeple { width: 15px; height: 15px; }
   .ann-card { padding: 10px 16px; }
   .ann-title { font-size: 1.1rem; }
-  .ann-card.turn.mine .ann-title { font-size: 1.5rem; }
+  .ann-card.turn.mine .ann-title { font-size: 1.9rem; }
   .ann-points { font-size: 1.8rem; }
   .rules-features { grid-template-columns: 1fr; }
   .results-table { font-size: 0.8rem; }
@@ -629,3 +634,41 @@ input { font-family: var(--serif); font-size: 1.05rem; }
   padding: 8px 12px; border-radius: 10px; background: rgb(20 14 10 / 0.92); border: 1px solid var(--hair);
 }
 .sound-test > span { font-family: var(--display); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-right: 4px; }
+
+/* ---- Layout: full-width names, a one-row dock, and the scoring guide ---- */
+.pr-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pr-sub { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pr-sub .bot-tag { margin-left: 0; }
+
+/* Nameplate on the left, the tile dead center, what to do on the right. */
+.dock-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 24px; }
+.dock-row > .me-id { justify-self: start; }
+.dock-row > .hand { justify-self: center; }
+.dock-actions {
+  justify-self: end; width: min(400px, 100%); margin: 0; padding: 0; border: 0; min-height: 0;
+  display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 10px 8px; text-align: left;
+}
+/* The instruction on its own line, buttons in a row beneath it. */
+.dock-actions > span:first-child { flex-basis: 100%; line-height: 1.35; }
+
+
+@media (max-width: 860px) {
+  .dock-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+  .dock-actions { grid-column: 1 / -1; justify-self: stretch; max-width: none; justify-content: flex-start; text-align: left; }
+  .guide { display: none; }
+  /* Phones turn the tile with the Turn button instead; the arrows would crowd the nameplate. */
+  .hand-row > .btn { display: none; }
+}
+
+/* ---- Scoring guide, under the players ---- */
+.guide { display: flex; flex-direction: column; gap: 7px; padding: 10px 12px 4px; border-top: 1px solid var(--line); }
+/* The players and tile count keep their size; only the guide gives way (the column scrolls). */
+.scoreboard > .player-row, .scoreboard > .deck-left { flex-shrink: 0; }
+.guide ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.guide li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+.guide li .tile-face { box-shadow: 0 0 0 1px #b8902f, 0 2px 5px rgb(0 0 0 / 0.45); border-radius: 2px; margin-top: 2px; }
+.guide li div { display: flex; flex-direction: column; font-family: var(--serif); font-size: 0.92rem; line-height: 1.22; }
+.guide li b { font-family: var(--display); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-bright); font-weight: 600; }
+.guide-end { color: var(--muted); font-style: italic; font-size: 0.86rem; }
+.guide-note { margin: 2px 0 0; font-family: var(--serif); font-style: italic; font-size: 0.86rem; line-height: 1.25; color: var(--muted); }
+.scoreboard { scrollbar-width: thin; scrollbar-color: rgb(201 160 58 / 0.3) transparent; }

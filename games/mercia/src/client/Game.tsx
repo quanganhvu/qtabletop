@@ -172,6 +172,7 @@ export function Game({ room, game, you, act, send, leave, notify }: {
           <div className="deck-left" title="Tiles still face down">
             <span className="deck-stack" /><span><Num>{game.deckCount}</Num></span><span className="muted small">tiles left</span>
           </div>
+          <ScoringGuide />
         </section>
 
         <main className="table">
@@ -191,21 +192,7 @@ export function Game({ room, game, you, act, send, leave, notify }: {
 
       {me ? (
         <div className={cx('dock', myTurn && 'active')} ref={dockRef}>
-          <div className="prompt">
-            <ActionBar
-              game={game}
-              me={me}
-              myTurn={myTurn}
-              sel={sel}
-              canRotate={!sel.spot || (spotAt(sel.spot.x, sel.spot.y)?.rots.length ?? 0) > 1}
-              optionsCount={options.length}
-              rotate={() => rotate()}
-              confirm={confirmPlace}
-              cancel={() => setSel(freshSelection(game.turn, sel.rot))}
-              onShowResults={() => setShowResults(true)}
-            />
-          </div>
-          <div className="tableau">
+          <div className="tableau dock-row">
             <div className="me-id">
               <div className="me-crest"><Crest arms={armsOf(me.id)} size={56} /></div>
               <div className="me-info">
@@ -219,6 +206,20 @@ export function Game({ room, game, you, act, send, leave, notify }: {
               </div>
             </div>
             <Hand game={game} you={you} rot={myTurn ? sel.rot : 0} myTurn={myTurn} onRotate={myTurn ? rotate : undefined} />
+            <div className="prompt dock-actions">
+              <ActionBar
+                game={game}
+                me={me}
+                myTurn={myTurn}
+                sel={sel}
+                canRotate={!sel.spot || (spotAt(sel.spot.x, sel.spot.y)?.rots.length ?? 0) > 1}
+                optionsCount={options.length}
+                rotate={() => rotate()}
+                confirm={confirmPlace}
+                cancel={() => setSel(freshSelection(game.turn, sel.rot))}
+                onShowResults={() => setShowResults(true)}
+              />
+            </div>
           </div>
         </div>
       ) : (
@@ -276,12 +277,12 @@ function PlayerRow({ player: p, seat, you, isCurrent, offline, left, bot, level,
     <div className={cx('player-row', isCurrent && 'current', offline && 'offline', you && 'mine')} style={{ '--seat': SEAT_COLORS[seat].fill } as CSSProperties}>
       <Crest arms={arms} size={26} />
       <div className="pr-main">
-        <span className="pr-name">
-          <span className="pr-text">{p.name}{you && <span className="muted"> (you)</span>}</span>
+        <span className="pr-name" title={p.name}>{p.name}{you && <span className="muted"> (you)</span>}</span>
+        <span className="pr-sub">
+          <Followers count={p.meeples} seat={seat} small />
           {bot && <span className="tag muted bot-tag" title={left ? 'Left the game; a bot is playing for them' : undefined}>{left ? 'left · bot' : BOT_LEVEL_INFO[level ?? 'normal'].rank}</span>}
           {offline && <span className="tag muted">offline</span>}
         </span>
-        <Followers count={p.meeples} seat={seat} small />
       </div>
       {(offline || left) && canClaim && <button className="btn tiny" onClick={onClaim}>Take seat</button>}
       <span key={p.score} className="pr-score pop" title={POINTS_NAME}><Num>{p.score}</Num></span>
@@ -323,7 +324,7 @@ function ActionBar({ game, me, myTurn, sel, canRotate, optionsCount, rotate, con
   }
   if (!myTurn) return <span className="muted thinking">Waiting for {game.players[game.current].name}</span>;
   if (!sel.spot) {
-    return <span><b className="accent">Your turn!</b> Choose a glowing square to lay your tile. Brighter squares fit it the way it is turned now.</span>;
+    return <span><b className="accent">Your turn!</b> Pick a glowing square for your tile.</span>;
   }
   const kind = sel.meeple === null ? null : TILES[game.tile!].features[sel.meeple].kind;
   return (
@@ -332,15 +333,44 @@ function ActionBar({ game, me, myTurn, sel, canRotate, optionsCount, rotate, con
         {kind
           ? <>A {FEATURE_NAMES[kind].follower} goes to the {FEATURE_NAMES[kind].name}.</>
           : me.meeples === 0
-            ? <>All your followers are out.</>
+            ? <>All your banners are out.</>
             : optionsCount
-              ? <>Tap a circle on the tile to send a follower, or lay it as it is.</>
-              : <>No free feature for a follower here.</>}
+              ? <>Tap a circle to plant a banner, or just lay it.</>
+              : <>Nothing free to claim here.</>}
       </span>
       {canRotate && <button className="btn" onClick={rotate}><UiIcon name="rotate" />Turn</button>}
       <button className="btn primary" onClick={confirm}>{kind ? `Lay tile & ${FEATURE_NAMES[kind].follower}` : 'Lay tile'}</button>
       <button className="btn ghost" onClick={cancel}>Cancel</button>
     </>
+  );
+}
+
+/** How each feature earns points: a quick reference beside the board. */
+const GUIDE: { tile: string; rot?: number; name: string; now: string; end: string }[] = [
+  { tile: 'F', name: 'City', now: '2 per tile & pennant when walled', end: 'If unfinished: 1 each' },
+  { tile: 'U', rot: 1, name: 'Road', now: '1 per tile once both ends stop', end: 'If unfinished: the same' },
+  { tile: 'B', name: 'Abbey', now: '9 once fully surrounded', end: 'If not: 1 + 1 per neighbor' },
+  { tile: 'E', name: 'Farm', now: 'Scores at the end only:', end: '3 per finished city it touches' },
+];
+
+function ScoringGuide() {
+  return (
+    <section className="guide" aria-label="How to earn points">
+      <h3>Earning points</h3>
+      <ul>
+        {GUIDE.map((g) => (
+          <li key={g.name}>
+            <TileFace tile={g.tile} rot={g.rot} size={34} />
+            <div>
+              <b>{g.name}</b>
+              <span>{g.now}</span>
+              <span className="guide-end">{g.end}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="guide-note">Most banners on a feature takes the points. Ties all score.</p>
+    </section>
   );
 }
 

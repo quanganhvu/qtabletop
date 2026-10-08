@@ -97,8 +97,9 @@ export function Announcer({ item, game, you, armsOf }: {
 
   if (item.kind === 'turn') {
     const mine = playerId === you;
+    // Your own turn is announced in the middle of the board; other players' turns at the top.
     return (
-      <div className="announcer" key={item.id}>
+      <div className={cx('announcer', mine && 'center')} key={item.id}>
         <div className={cx('ann-card turn', mine && 'mine')} style={{ animationDuration: `${item.ms}ms` }}>
           {mine
             ? <div className="ann-title">Your turn!</div>
@@ -148,9 +149,11 @@ export function Announcer({ item, game, you, armsOf }: {
       );
       break;
   }
+  // Points you earn are announced in the middle of the board, like your turn.
+  const yours = e.kind === 'score' && !!you && e.winners.includes(you);
   return (
-    <div className="announcer" key={item.id}>
-      <div className={cx('ann-card', e.kind)} style={{ animationDuration: `${item.ms}ms` }}>{body}</div>
+    <div className={cx('announcer', yours && 'center')} key={item.id}>
+      <div className={cx('ann-card', e.kind, yours && 'mine')} style={{ animationDuration: `${item.ms}ms` }}>{body}</div>
     </div>
   );
 }
