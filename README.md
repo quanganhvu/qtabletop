@@ -8,6 +8,7 @@ Online board games to play with friends, all in one place. Pick a game, create a
 |---|---|---|---|
 | **Stronghold**: medieval engine building (Splendor-style), 2–4 players | [games/stronghold](games/stronghold) | https://stronghold.tabletop-online.workers.dev | live |
 | **Mercia**: tile laying (Carcassonne-style), 2–5 players | [games/mercia](games/mercia) | https://mercia.tabletop-online.workers.dev | new |
+| **Whispers**: a witch hunt (Werewolf-style hidden roles), 5–16 players | [games/whispers](games/whispers) | https://whispers.tabletop-online.workers.dev | new |
 | **Skyline**: hotel chains and shares (Acquire-style), 2–6 players | [games/skyline](games/skyline) | https://skyline.tabletop-online.workers.dev | in the workshop |
 | **Red Harbor**: a Mars-colony economy (Le Havre-style), 2–5 players | [games/red-harbor](games/red-harbor) | https://le-havre.tabletop-online.workers.dev | in the workshop |
 | **The hall**: the menu of games | [hall](hall) | https://q.tabletop-online.workers.dev | |
