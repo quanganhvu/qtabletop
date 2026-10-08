@@ -2,7 +2,7 @@
 
 A medieval take on the Splendor-style engine-building board game, for 2–4 friends.
 
-**Play it:** https://stronghold.splendor-online.workers.dev Create a room, share the link, and play in any browser on desktop or mobile.
+**Play it:** https://stronghold.tabletop-online.workers.dev (or pick it from all the games at https://q.tabletop-online.workers.dev). Create a room, share the link, and play in any browser on desktop or mobile.
 
 **Stack:** TypeScript · React 19 + Vite 8 · Cloudflare Workers + Durable Objects (via `partyserver`) · Vitest
 

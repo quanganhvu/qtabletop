@@ -7,6 +7,7 @@ import { UiIcon } from './UiIcon';
 import { WaxSeal } from './WaxSeal';
 import { GAME_NAME } from '../shared/theme';
 import { getArms, getName, randomRoomCode, setArms, setName } from './identity';
+import { hallUrl } from './hall';
 
 export function Home({ connect, notify, busy }: {
   connect: (code: string, create: boolean) => void;
@@ -29,6 +30,7 @@ export function Home({ connect, notify, busy }: {
 
   return (
     <div className="center">
+      <a className="hall-link" href={hallUrl()}>← All games</a>
       <form className="panel home" onSubmit={(e) => { e.preventDefault(); go(!code); }}>
         <div className="home-crest"><ResourceIcon color="gold" /></div>
         <h1>{GAME_NAME}</h1>

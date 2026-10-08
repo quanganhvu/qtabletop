@@ -806,3 +806,11 @@ input { font-family: var(--serif); font-size: 1.05rem; }
 .lvl-label { font-family: var(--serif); font-style: italic; font-size: 0.8rem; letter-spacing: 0; color: var(--muted); text-transform: none; }
 .opp-name { display: flex; align-items: center; min-width: 0; }
 .opp-name .bot-tag { flex-shrink: 0; }
+
+/* ---- Back to the game hall (Q's Tabletop) ---- */
+.hall-link {
+  position: fixed; left: 16px; top: 14px; z-index: 5; padding: 4px 8px;
+  font-family: var(--serif); font-style: italic; font-size: 1.05rem; color: var(--accent-bright);
+  text-decoration: underline; text-decoration-color: rgb(201 160 58 / 0.4); text-underline-offset: 4px;
+}
+.hall-link:hover { text-decoration-color: var(--accent-bright); }
