@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MAX_NAME_LENGTH } from '../shared/protocol';
-import { Crest, TileFace } from './pieces';
+import { Crest } from './pieces';
 import { ArmsPicker } from './ArmsPicker';
 import { RuleBook } from './RuleBook';
 import { UiIcon } from './UiIcon';
@@ -8,6 +8,7 @@ import { WaxSeal } from './WaxSeal';
 import { GAME_NAME } from '../shared/theme';
 import { getArms, getName, randomRoomCode, setArms, setName } from './identity';
 import { hallUrl } from './hall';
+import { SoundTest } from './SoundTest';
 
 export function Home({ connect, notify, busy }: {
   connect: (code: string, create: boolean) => void;
@@ -31,8 +32,9 @@ export function Home({ connect, notify, busy }: {
   return (
     <div className="center">
       <a className="hall-link" href={hallUrl()}>← All games</a>
+      {import.meta.env.DEV && location.search.includes('sounds') && <SoundTest />}
       <form className="panel home" onSubmit={(e) => { e.preventDefault(); go(!code); }}>
-        <div className="home-crest"><TileFace tile="C" size={58} /></div>
+        <div className="home-crest"><img className="castle" src="/castle.svg" alt="" width={84} height={84} /></div>
         <h1>{GAME_NAME}</h1>
         <p className="muted tagline">Lay the land tile by tile. Raise cities, roads and abbeys. 2–5 players.</p>
         <label htmlFor="name">Your name and arms</label>

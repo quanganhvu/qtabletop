@@ -1,20 +1,21 @@
 import { TILES, sideOf, type FeatureDef } from '../../shared/tiles';
 import { svgUrl } from './svg';
 
-// Draws each land tile as an engraved, hand-tinted map square on a 100×100
-// artboard: olive meadow, pale dusty roads, sandstone cities with terracotta
-// roofs behind crenellated walls, and ink-drawn abbeys. Everything is derived
+// Draws each land tile as a square of an antique map on a 100×100 artboard:
+// olive meadow stippled with ink and little map trees, roads as
+// double ink lines, grey-stone cities with terracotta roofs inside double-lined
+// walls and round towers, and abbeys sketched in ink. Pennants carry a gold
+// saltire on burgundy. Everything is derived
 // from the tile's features, so the art always agrees with the rules.
 
 const INK = '#2a1f14';
-const MEADOW_LIGHT = '#8d9757';
-const MEADOW_DARK = '#6b7540';
-const GRASS = '#55602f';
-const ROAD = '#e6d8b5';
-const ROAD_EDGE = '#5b4a30';
-const STONE = '#cdb88c';
-const STONE_DARK = '#a8915f';
-const WALL = '#8a7650';
+const LAND_LIGHT = '#8d9757';
+const LAND_DARK = '#6b7540';
+const TREE = '#4f5a2c';
+const PARCHMENT = '#efe6c8';
+const STONE = '#bdb6a3';
+const STONE_DARK = '#9b9482';
+const WALL_FILL = '#d9d0b8';
 const ROOF = '#9c4630';
 const ROOF_DARK = '#6e2c1c';
 
@@ -25,6 +26,8 @@ interface CityShape {
   wall: string;
   houses: [number, number][];
   pennant: [number, number];
+  /** Round towers along the inner wall. */
+  towers: [number, number][];
 }
 
 const SHAPES: Record<'one' | 'adjacent' | 'opposite' | 'three' | 'four', CityShape> = {
@@ -34,6 +37,7 @@ const SHAPES: Record<'one' | 'adjacent' | 'opposite' | 'three' | 'four', CitySha
     wall: 'M100 0C76 34 24 34 0 0',
     houses: [[30, 7], [44, 13], [58, 10], [71, 6]],
     pennant: [50, 50],
+    towers: [[50, 25.5]],
   },
   // City on the west and north edges, joined.
   adjacent: {
@@ -41,6 +45,7 @@ const SHAPES: Record<'one' | 'adjacent' | 'opposite' | 'three' | 'four', CitySha
     wall: 'M100 0C56 36 36 56 0 100',
     houses: [[40, 9], [58, 8], [26, 22], [9, 40], [8, 58], [40, 24], [24, 40], [14, 12]],
     pennant: [13, 13],
+    towers: [[47, 47]],
   },
   // City from the west edge to the east edge.
   opposite: {
@@ -48,6 +53,7 @@ const SHAPES: Record<'one' | 'adjacent' | 'opposite' | 'three' | 'four', CitySha
     wall: 'M0 0C34 40 66 40 100 0M100 100C66 60 34 60 0 100',
     houses: [[10, 36], [10, 62], [30, 42], [30, 60], [70, 42], [70, 60], [90, 36], [90, 62], [52, 64]],
     pennant: [24, 50],
+    towers: [[50, 30], [50, 70]],
   },
   // City on the north, east and west edges; open to the south. Like every city
   // shape, it runs the full length of its city edges, so neighbors meet cleanly.
@@ -56,12 +62,14 @@ const SHAPES: Record<'one' | 'adjacent' | 'opposite' | 'three' | 'four', CitySha
     wall: 'M100 100C70 56 30 56 0 100',
     houses: [[14, 10], [32, 8], [68, 8], [86, 10], [10, 30], [90, 30], [10, 52], [90, 52], [10, 74], [90, 74], [32, 46], [68, 46], [50, 54], [76, 24], [30, 26]],
     pennant: [22, 20],
+    towers: [[50, 67]],
   },
   four: {
     fill: 'M0 0H100V100H0Z',
     wall: '',
     houses: [[12, 12], [32, 10], [68, 10], [88, 12], [10, 32], [90, 32], [10, 68], [90, 68], [12, 88], [32, 90], [68, 90], [88, 88], [30, 30], [70, 30], [30, 70], [70, 70], [50, 72]],
     pennant: [30, 50],
+    towers: [],
   },
 };
 
@@ -94,14 +102,18 @@ function seeded(seed: number) {
   };
 }
 
-function meadow(id: string): string {
+/** Olive meadow: an ink stipple and a few map-style trees (roads and cities are drawn over them). */
+function land(id: string): string {
   const rng = seeded(id.charCodeAt(0) * 7919);
-  const tufts = Array.from({ length: 30 }, () => {
-    const x = 4 + rng() * 92, y = 4 + rng() * 92, s = 1.6 + rng() * 1.4;
-    return `M${(x - s).toFixed(1)} ${(y - s).toFixed(1)}L${x.toFixed(1)} ${y.toFixed(1)}L${(x + s * 0.8).toFixed(1)} ${(y - s * 1.2).toFixed(1)}`;
+  const dots = Array.from({ length: 70 }, () =>
+    `<circle cx="${(2 + rng() * 96).toFixed(1)}" cy="${(2 + rng() * 96).toFixed(1)}" r="${(0.25 + rng() * 0.35).toFixed(2)}"/>`).join('');
+  const trees = Array.from({ length: 4 }, () => {
+    const x = 10 + rng() * 80, y = 10 + rng() * 80;
+    return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><path d="M0 2.5V5.5" stroke="${INK}" stroke-width=".7"/>
+      <circle cy="-.5" r="3.2" fill="${TREE}" stroke="${INK}" stroke-width=".6"/><path d="M-1.6-1.6a2 2 0 0 1 1.8-1" stroke="#8d9757" stroke-width=".6" fill="none"/></g>`;
   }).join('');
-  return `<rect width="100" height="100" fill="url(#mead)"/>
-    <path d="${tufts}" fill="none" stroke="${GRASS}" stroke-width=".7" stroke-linecap="round" opacity=".55"/>`;
+  return `<rect width="100" height="100" fill="url(#land)"/>
+    <g fill="${INK}" opacity=".28">${dots}</g>${trees}`;
 }
 
 function roadPath(f: FeatureDef, endY: number): string {
@@ -119,53 +131,58 @@ function roadPath(f: FeatureDef, endY: number): string {
 
 function house(x: number, y: number, shade: number, upright: number): string {
   const roof = shade > 0.5 ? ROOF : ROOF_DARK;
-  return `<g transform="translate(${x} ${y}) rotate(${upright})"><rect x="-4" y="-1" width="8" height="5" fill="#eadcbc" stroke="${INK}" stroke-width=".5"/>
+  return `<g transform="translate(${x} ${y}) rotate(${upright})"><rect x="-4" y="-1" width="8" height="5" fill="${PARCHMENT}" stroke="${INK}" stroke-width=".5"/>
     <path d="M-5 -0.5L0 -5L5 -0.5Z" fill="${roof}" stroke="${INK}" stroke-width=".5" stroke-linejoin="round"/></g>`;
 }
+
+/** A pennant: a gold saltire on a burgundy roundel. */
+const SALTIRE = 'M-5.2-3.8L-3.8-5.2L0-1.4L3.8-5.2L5.2-3.8L1.4 0L5.2 3.8L3.8 5.2L0 1.4L-3.8 5.2L-5.2 3.8L-1.4 0Z';
 
 /** A city, drawn on a tile that will be turned `tileRot` quarter turns. */
 function city(f: FeatureDef, rng: () => number, tileRot: number): string {
   const { shape, rot } = cityShape(f.ports.map(sideOf));
   const upright = -(rot + tileRot) * 90;
   const houses = shape.houses.map(([x, y]) => house(x, y, rng(), upright)).join('');
-  const pennant = f.pennant ? `<g transform="translate(${shape.pennant[0]} ${shape.pennant[1]}) rotate(${upright})">
-      <path d="M-7-8H7V0C7 6 3 9 0 11C-3 9-7 6-7 0Z" fill="#24427c" stroke="#c9a03a" stroke-width="1.6"/>
-      <path d="M0-5V7M-4 0H4" stroke="#e8c66e" stroke-width="1.6"/></g>` : '';
+  const pennant = f.pennant ? `<g transform="translate(${shape.pennant[0]} ${shape.pennant[1]})">
+      <circle r="8" fill="#7a1f26" stroke="#c9a03a" stroke-width="1.6"/><circle r="8" fill="none" stroke="${INK}" stroke-width=".6"/>
+      <path d="${SALTIRE}" fill="#e8c66e" stroke="${INK}" stroke-width=".45" stroke-linejoin="round"/></g>` : '';
   const wall = shape.wall
-    ? `<path d="${shape.wall}" fill="none" stroke="${WALL}" stroke-width="5"/>
-       <path d="${shape.wall}" fill="none" stroke="${INK}" stroke-width="7" stroke-dasharray="2.2 2.2" opacity=".55"/>
-       <path d="${shape.wall}" fill="none" stroke="${STONE_DARK}" stroke-width="2.6"/>`
+    ? `<path d="${shape.wall}" fill="none" stroke="${INK}" stroke-width="4.2"/>
+       <path d="${shape.wall}" fill="none" stroke="${WALL_FILL}" stroke-width="2"/>
+       <path d="${shape.wall}" fill="none" stroke="${INK}" stroke-width="2" stroke-dasharray=".7 2.6" opacity=".6"/>`
     : '';
+  const towers = shape.towers.map(([x, y]) => `<g transform="translate(${x} ${y})">
+      <circle r="4.4" fill="${WALL_FILL}" stroke="${INK}" stroke-width="1.1"/><circle r="2.2" fill="none" stroke="${INK}" stroke-width=".6"/></g>`).join('');
   return `<g transform="rotate(${rot * 90} 50 50)">
     <path d="${shape.fill}" fill="url(#stone)"/>
-    <path d="${shape.fill}" fill="url(#cobbles)" opacity=".5"/>
-    ${houses}${pennant}${wall}
+    <path d="${shape.fill}" fill="url(#hatch)" opacity=".35"/>
+    ${houses}${pennant}${wall}${towers}
   </g>`;
 }
 
 const ABBEY = `<g transform="translate(50 48)">
-  <ellipse cx="0" cy="6" rx="22" ry="17" fill="#9aa463" opacity=".8"/>
-  <ellipse cx="0" cy="6" rx="22" ry="17" fill="none" stroke="${INK}" stroke-width=".6" stroke-dasharray="1.5 1.5" opacity=".6"/>
-  <rect x="-12" y="-4" width="24" height="16" fill="#eadcbc" stroke="${INK}" stroke-width=".9"/>
+  <ellipse cx="0" cy="6" rx="22" ry="17" fill="${PARCHMENT}"/>
+  <ellipse cx="0" cy="6" rx="22" ry="17" fill="none" stroke="${INK}" stroke-width=".8" stroke-dasharray="2 1.6"/>
+  <rect x="-12" y="-4" width="24" height="16" fill="${PARCHMENT}" stroke="${INK}" stroke-width=".9"/>
   <path d="M-14 -3L0 -13L14 -3Z" fill="${ROOF}" stroke="${INK}" stroke-width=".9" stroke-linejoin="round"/>
-  <rect x="6" y="-20" width="7" height="14" fill="#eadcbc" stroke="${INK}" stroke-width=".9"/>
-  <path d="M5 -20L9.5 -27L14 -20Z" fill="${ROOF_DARK}" stroke="${INK}" stroke-width=".9" stroke-linejoin="round"/>
+  <rect x="6" y="-20" width="7" height="14" fill="${PARCHMENT}" stroke="${INK}" stroke-width=".9"/>
+  <path d="M5 -20L9.5 -27L14 -20Z" fill="${ROOF}" stroke="${INK}" stroke-width=".9" stroke-linejoin="round"/>
   <path d="M9.5 -27V-32M7.5 -30H11.5" stroke="${INK}" stroke-width=".9"/>
   <path d="M-3 12V6A3 3 0 0 1 3 6V12Z" fill="${INK}"/>
   <path d="M-9 1h3v4h-3zM6 1h3v4h-3z" fill="${INK}" opacity=".7"/>
 </g>`;
 
 const HAMLET = `<g transform="translate(50 50)">
-  <circle r="9" fill="${ROAD}" stroke="${ROAD_EDGE}" stroke-width="1"/>
-  <rect x="-5" y="-3" width="10" height="7" fill="#eadcbc" stroke="${INK}" stroke-width=".7"/>
-  <path d="M-6.5 -2.5L0 -8L6.5 -2.5Z" fill="${ROOF}" stroke="${INK}" stroke-width=".7" stroke-linejoin="round"/>
+  <circle r="9.5" fill="${PARCHMENT}" stroke="${INK}" stroke-width="1.2"/>
+  <rect x="-5" y="-3" width="10" height="7" fill="${PARCHMENT}" stroke="${INK}" stroke-width=".7"/>
+  <path d="M-6.5 -2.5L0 -8L6.5 -2.5Z" fill="${ROOF_DARK}" stroke="${INK}" stroke-width=".7" stroke-linejoin="round"/>
   <path d="M-1.2 4V1h2.4v3z" fill="${INK}"/>
 </g>`;
 
 const DEFS = `<defs>
-  <linearGradient id="mead" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${MEADOW_LIGHT}"/><stop offset="1" stop-color="${MEADOW_DARK}"/></linearGradient>
-  <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${STONE}"/><stop offset="1" stop-color="#bba274"/></linearGradient>
-  <pattern id="cobbles" width="6" height="5" patternUnits="userSpaceOnUse"><path d="M0 5H6M3 0V2.5M0 2.5H6" stroke="${STONE_DARK}" stroke-width=".5" fill="none"/></pattern>
+  <linearGradient id="land" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${LAND_LIGHT}"/><stop offset="1" stop-color="${LAND_DARK}"/></linearGradient>
+  <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${STONE}"/><stop offset="1" stop-color="${STONE_DARK}"/></linearGradient>
+  <pattern id="hatch" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V3" stroke="${INK}" stroke-width=".5"/></pattern>
 </defs>`;
 
 /**
@@ -180,16 +197,15 @@ export function tileSvg(id: string, rot = 0): string {
   const deadEnds = roads.filter((f) => f.ports.length === 1).length;
   const roadD = roads.map((f) => roadPath(f, hasAbbey ? 62 : 50)).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${DEFS}
-    ${meadow(id)}
+    ${land(id)}
     <g transform="rotate(${rot * 90} 50 50)">
-    ${roadD ? `<path d="${roadD}" fill="none" stroke="${ROAD_EDGE}" stroke-width="11" stroke-linecap="butt" opacity=".85"/>
-      <path d="${roadD}" fill="none" stroke="${ROAD}" stroke-width="8.4"/>
-      <path d="${roadD}" fill="none" stroke="#b9a77c" stroke-width=".8" stroke-dasharray="1 3"/>` : ''}
+    ${roadD ? `<path d="${roadD}" fill="none" stroke="${INK}" stroke-width="8"/>
+      <path d="${roadD}" fill="none" stroke="${PARCHMENT}" stroke-width="5.4"/>` : ''}
     ${t.features.filter((f) => f.kind === 'city').map((f) => city(f, rng, rot)).join('')}
     </g>
     ${hasAbbey ? ABBEY : ''}
     ${deadEnds >= 2 ? HAMLET : ''}
-    <rect x=".5" y=".5" width="99" height="99" fill="none" stroke="${INK}" stroke-opacity=".45"/>
+    <rect x=".5" y=".5" width="99" height="99" fill="none" stroke="${INK}" stroke-opacity=".55"/>
   </svg>`;
 }
 

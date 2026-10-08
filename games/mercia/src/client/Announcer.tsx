@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { GameEvent, GameView } from '../shared/game';
 import type { Arms } from '../shared/heraldry';
 import { FEATURE_NAMES, POINTS_NAME } from '../shared/theme';
-import { Crest, Meeple, TileFace, cx } from './pieces';
-import { chipSound, sparkleSound, tileSound, turnChime } from './sfx';
+import { Crest, Banner, TileFace, cx } from './pieces';
+import { bannerSound, sparkleSound, tileSound, turnChime } from './sfx';
 
 type Announced = Extract<GameEvent, { kind: 'score' | 'discard' | 'final' }>;
 
@@ -59,7 +59,7 @@ export function useAnnouncements(game: GameView, you: string | null): Shown | nu
   return head && !stale(head) ? head : null;
 }
 
-/** Wooden knocks for laid tiles and followers, as they happen. */
+/** A wooden knock for each laid tile, and a thud and flap for each banner planted. */
 export function useEventSounds(game: GameView) {
   const seen = useRef<number | null>(null);
   useEffect(() => {
@@ -73,7 +73,7 @@ export function useEventSounds(game: GameView) {
     const placed = fresh.find((e) => e.kind === 'place');
     if (placed) {
       tileSound();
-      if (placed.kind === 'place' && placed.meeple !== null) setTimeout(chipSound, 140);
+      if (placed.kind === 'place' && placed.meeple !== null) setTimeout(bannerSound, 140);
     }
   }, [game]);
 }
@@ -121,7 +121,7 @@ export function Announcer({ item, game, you, armsOf }: {
         <>
           <div className="ann-title">
             <span className="ann-who">
-              {e.winners.map((id) => <Meeple key={id} seat={seatOf(id)} size={34} lying={e.feature === 'field'} />)}
+              {e.winners.map((id) => <Banner key={id} seat={seatOf(id)} size={34} leaning={e.feature === 'field'} />)}
               {names.join(' & ')}
             </span>
             <span className="ann-sub">{verb}</span>

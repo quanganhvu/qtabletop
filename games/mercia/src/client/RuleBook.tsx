@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { MEEPLES } from '../shared/game';
 import { FEATURE_NAMES, GAME_NAME } from '../shared/theme';
-import { Meeple, TileFace } from './pieces';
+import { Banner, TileFace } from './pieces';
 
 /** The rules of the game, styled as a parchment booklet. */
 export function RuleBook({ onClose }: { onClose: () => void }) {
@@ -71,9 +71,9 @@ export function RuleBook({ onClose }: { onClose: () => void }) {
           <div className="rules-feature">
             <TileFace tile="E" size={72} />
             <div>
-              <h4>Farms · {f.field.followers} <Meeple seat={3} size={18} lying /></h4>
+              <h4>Farms · {f.field.followers} <Banner seat={3} size={18} leaning /></h4>
               <p>
-                Farmers lie in their meadow and never come home. At the end, the farm scores <b>3 points</b> for every
+                A farmer's banner leans in its meadow and stays there for good. At the end, the farm scores <b>3 points</b> for every
                 <i> finished</i> city it touches. Roads and city walls divide meadows.
               </p>
             </div>

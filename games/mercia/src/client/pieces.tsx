@@ -36,11 +36,11 @@ export function TileFace({ tile, rot = 0, size, className, style, animateTurn }:
   );
 }
 
-/** The classic follower figure. */
-const MEEPLE_PATH = 'M50 4a14 14 0 0 1 14 14c0 5-2 9-5 12l27 8c7 2 10 8 8 13-2 5-7 6-12 5l-13-3 14 32c2 5-1 10-6 10H62L50 77 38 95H23c-5 0-8-5-6-10l14-32-13 3c-5 1-10 0-12-5-2-5 1-11 8-13l27-8c-3-3-5-7-5-12A14 14 0 0 1 50 4z';
-
-/** A follower in a seat's color. Farmers lie down in their meadow. */
-export function Meeple({ seat, size = 22, lying, className, title }: { seat: number; size?: number; lying?: boolean; className?: string; title?: string }) {
+/**
+ * A follower: a swallow-tailed banner on a pole in a seat's color, planted on
+ * whatever it claims. A farmer's banner leans over in its meadow.
+ */
+export function Banner({ seat, size = 22, leaning, className, title }: { seat: number; size?: number; leaning?: boolean; className?: string; title?: string }) {
   const c = SEAT_COLORS[seat % SEAT_COLORS.length];
   return (
     <svg
@@ -48,14 +48,18 @@ export function Meeple({ seat, size = 22, lying, className, title }: { seat: num
       viewBox="0 0 100 100"
       width={size}
       height={size}
-      style={lying ? { transform: 'rotate(-90deg)' } : undefined}
+      style={leaning ? { transform: 'rotate(-28deg)' } : undefined}
       role="img"
-      aria-label={title ?? `${c.name} follower`}
+      aria-label={title ?? `${c.name} banner`}
     >
       {title && <title>{title}</title>}
-      <path d={MEEPLE_PATH} fill="#000" opacity=".35" transform="translate(3 5)" />
-      <path d={MEEPLE_PATH} fill={c.fill} stroke={c.edge} strokeWidth="5" strokeLinejoin="round" />
-      <path d="M40 12a10 10 0 0 1 10-5" stroke="#fff" strokeOpacity=".45" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <ellipse cx="36" cy="93" rx="17" ry="4.5" fill="#000" opacity=".35" />
+      <path d="M38 16H90L77 34L90 52H38Z" fill="#000" opacity=".3" transform="translate(3 4)" />
+      <rect x="29" y="10" width="7" height="82" rx="2" fill="#6b4a2a" stroke="#1e1610" strokeWidth="3.5" />
+      <path d="M36 14H88L75 32L88 50H36Z" fill={c.fill} stroke={c.edge} strokeWidth="5" strokeLinejoin="round" />
+      <path d="M36 21H74" stroke="#fff" strokeOpacity=".35" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="56" cy="32" r="6.5" fill="#e8c66e" stroke={c.edge} strokeWidth="3" />
+      <circle cx="32.5" cy="8.5" r="7" fill="#e8c66e" stroke="#1e1610" strokeWidth="3.5" />
     </svg>
   );
 }

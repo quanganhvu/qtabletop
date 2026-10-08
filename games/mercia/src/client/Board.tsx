@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import { parseKey, type GameView } from '../shared/game';
 import { FEATURE_NAMES } from '../shared/theme';
 import { TILES, rotatePoint } from '../shared/tiles';
-import { Meeple, TileFace, cx } from './pieces';
+import { Banner, TileFace, cx } from './pieces';
 
 /** Size of one tile in board units (CSS pixels at zoom 1). */
 export const TILE = 96;
@@ -201,7 +201,7 @@ export function Board({ game, spots, rot, preview, onSpot, onMeeple, flash, fitS
                     if (!suppressClick.current) onMeeple(chosen ? null : f);
                   }}
                 >
-                  {chosen && <Meeple seat={preview.seat} size={TILE * 0.3} lying={def.kind === 'field'} />}
+                  {chosen && <Banner seat={preview.seat} size={TILE * 0.3} leaning={def.kind === 'field'} />}
                 </button>
               );
             })}
@@ -216,7 +216,7 @@ export function Board({ game, spots, rot, preview, onSpot, onMeeple, flash, fitS
           const owner = game.players[placed.m.p]?.name ?? '';
           return (
             <div key={`m${k}`} className="placed-meeple" style={{ left: x * TILE + (ax / 100) * TILE, top: y * TILE + (ay / 100) * TILE }}>
-              <Meeple seat={placed.m.p} size={TILE * 0.3} lying={def.kind === 'field'} title={`${owner}'s ${FEATURE_NAMES[def.kind].follower}`} />
+              <Banner seat={placed.m.p} size={TILE * 0.3} leaning={def.kind === 'field'} title={`${owner}'s ${FEATURE_NAMES[def.kind].follower}`} />
             </div>
           );
         })}

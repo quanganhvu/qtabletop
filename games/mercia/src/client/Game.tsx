@@ -7,7 +7,7 @@ import { RuleBook } from './RuleBook';
 import { UiIcon } from './UiIcon';
 import { BOT_LEVEL_INFO, type BotLevel } from '../shared/botLevels';
 import { fanfare, isMuted, setMuted } from './sfx';
-import { Crest, Meeple, Num, TileFace, cx } from './pieces';
+import { Crest, Banner, Num, TileFace, cx } from './pieces';
 import { PRESET_ARMS, type Arms } from '../shared/heraldry';
 import { FEATURE_NAMES, GAME_NAME, POINTS_NAME, SEAT_COLORS } from '../shared/theme';
 import { TILES } from '../shared/tiles';
@@ -139,7 +139,7 @@ export function Game({ room, game, you, act, send, leave, notify }: {
   return (
     <div className={cx('game', myTurn && 'my-turn', !me && 'spectating')}>
       <header className="topbar">
-        <div className="brand"><TileFace tile="C" size={24} /> <span>{GAME_NAME}</span> <span className="room-tag">{room.code}</span></div>
+        <div className="brand"><img className="castle" src="/castle.svg" alt="" width={30} height={30} /> <span>{GAME_NAME}</span> <span className="room-tag">{room.code}</span></div>
         <div key={game.log.length} className="ticker">{game.log[game.log.length - 1]}</div>
         <div className="status"><Status game={game} myTurn={myTurn} /></div>
         <button className="btn ghost small" onClick={toggleMute} title={muted ? 'Sound is off' : 'Sound is on'} aria-label={muted ? 'Turn sound on' : 'Turn sound off'}><UiIcon name={muted ? 'bellOff' : 'bell'} /></button>
@@ -253,7 +253,7 @@ function Followers({ count, seat, small }: { count: number; seat: number; small?
   return (
     <span className={cx('followers', small && 'small')} title={`${count} of ${MEEPLES} followers in hand`}>
       {Array.from({ length: MEEPLES }, (_, i) => (
-        <span key={i} className={cx('follower-slot', i >= count && 'used')}><Meeple seat={seat} size={small ? 13 : 20} /></span>
+        <span key={i} className={cx('follower-slot', i >= count && 'used')}><Banner seat={seat} size={small ? 13 : 20} /></span>
       ))}
     </span>
   );

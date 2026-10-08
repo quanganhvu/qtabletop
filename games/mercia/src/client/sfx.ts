@@ -1,6 +1,7 @@
-// Medieval sound effects, synthesized with the Web Audio API: no audio files to
-// ship or license. Tiles knock on the table, followers clink, a handbell
-// announces your turn, a lute plucks when you score, and heralds sound the end.
+// Old English sound effects, synthesized with the Web Audio API: no audio files
+// to ship or license. Tiles knock on the table, banners thud into the turf and
+// flap, a cow horn calls your turn, an Anglo-Saxon lyre is plucked when you
+// score, and war horns, a frame drum and a church bell sound the end.
 //
 // Browsers only allow audio after a user gesture, so the context is created lazily
 // and unlocked on the first click; sounds before that are silently skipped.
@@ -8,7 +9,7 @@
 let ctx: AudioContext | null = null;
 let noise: AudioBuffer | null = null;
 let master: GainNode | null = null;
-const plucks = new Map<number, AudioBuffer>();
+const strings = new Map<number, AudioBuffer>();
 let muted = readMuted();
 
 function readMuted(): boolean {
@@ -68,183 +69,122 @@ function noiseBuffer(ac: AudioContext): AudioBuffer {
   return noise;
 }
 
-// ---- Instruments -----------------------------------------------------------------
-
-/** A struck metal bell (FM synthesis with an inharmonic modulator). */
-function bell(ac: AudioContext, freq: number, start: number, length: number, volume: number, brightness = 2.2) {
-  const carrier = ac.createOscillator();
-  const modulator = ac.createOscillator();
-  const depth = ac.createGain();
+/** A burst of filtered noise: breath, cloth, a brush of turf. */
+function hiss(ac: AudioContext, start: number, length: number, volume: number, type: BiquadFilterType, freq: number, q = 0.8) {
+  const src = ac.createBufferSource();
+  src.buffer = noiseBuffer(ac);
+  const filter = ac.createBiquadFilter();
+  filter.type = type;
+  filter.frequency.value = freq;
+  filter.Q.value = q;
   const amp = ac.createGain();
-  carrier.frequency.value = freq;
-  modulator.frequency.value = freq * 1.41;
-  depth.gain.setValueAtTime(freq * brightness, start);
-  depth.gain.exponentialRampToValueAtTime(freq * 0.05, start + length);
   amp.gain.setValueAtTime(0, start);
-  amp.gain.linearRampToValueAtTime(volume, start + 0.004);
+  amp.gain.linearRampToValueAtTime(volume, start + Math.min(0.02, length / 3));
   amp.gain.exponentialRampToValueAtTime(0.0001, start + length);
-  modulator.connect(depth).connect(carrier.frequency);
-  carrier.connect(amp).connect(out());
-  modulator.start(start);
-  carrier.start(start);
-  modulator.stop(start + length + 0.05);
-  carrier.stop(start + length + 0.05);
+  src.connect(filter).connect(amp).connect(out());
+  src.start(start, Math.random() * 0.5);
+  src.stop(start + length + 0.05);
 }
 
-/** A plucked lute string (Karplus–Strong), rendered once per pitch. */
-function pluck(ac: AudioContext, freq: number, start: number, volume: number) {
+// ---- Instruments -----------------------------------------------------------------
+
+/**
+ * An Anglo-Saxon lyre string: gut plucked by hand (Karplus–Strong), darker and
+ * shorter than a lute, through a hollow wooden body resonance.
+ */
+function lyre(ac: AudioContext, freq: number, start: number, volume: number) {
   const key = Math.round(freq);
-  let buffer = plucks.get(key);
+  let buffer = strings.get(key);
   if (!buffer) {
     const rate = ac.sampleRate;
-    buffer = ac.createBuffer(1, Math.floor(rate * 1.6), rate);
+    buffer = ac.createBuffer(1, Math.floor(rate * 1.4), rate);
     const data = buffer.getChannelData(0);
     const period = Math.max(2, Math.round(rate / freq));
-    for (let i = 0; i < period; i++) data[i] = Math.random() * 2 - 1;
-    for (let i = period; i < data.length; i++) data[i] = 0.994 * 0.5 * (data[i - period] + data[i - period + 1]);
-    plucks.set(key, buffer);
+    // A soft finger pluck: smoothed noise rather than a sharp pick.
+    let last = 0;
+    for (let i = 0; i < period; i++) data[i] = last = 0.6 * last + 0.4 * (Math.random() * 2 - 1);
+    for (let i = period; i < data.length; i++) data[i] = 0.991 * 0.5 * (data[i - period] + data[i - period + 1]);
+    strings.set(key, buffer);
   }
   const src = ac.createBufferSource();
   src.buffer = buffer;
   const tone = ac.createBiquadFilter();
   tone.type = 'lowpass';
-  tone.frequency.value = 3200;
+  tone.frequency.value = 2000;
+  const body = ac.createBiquadFilter();
+  body.type = 'peaking';
+  body.frequency.value = 260;
+  body.Q.value = 1.4;
+  body.gain.value = 7;
   const amp = ac.createGain();
   amp.gain.value = volume;
-  src.connect(tone).connect(amp).connect(out());
+  src.connect(tone).connect(body).connect(amp).connect(out());
   src.start(start);
 }
 
-/** A herald's trumpet: bright sawtooths through an opening filter, with a little vibrato. */
-function trumpet(ac: AudioContext, freq: number, start: number, length: number, volume: number) {
+/**
+ * A cow or war horn: a buzzy, hollow tone that swells, bends up into pitch at
+ * the start, with a little breath on top.
+ */
+function horn(ac: AudioContext, freq: number, start: number, length: number, volume: number) {
   const filter = ac.createBiquadFilter();
   filter.type = 'lowpass';
-  filter.Q.value = 2;
-  filter.frequency.setValueAtTime(500, start);
-  filter.frequency.linearRampToValueAtTime(freq * 6, start + 0.06);
-  filter.frequency.setTargetAtTime(freq * 4, start + 0.08, 0.1);
+  filter.Q.value = 3;
+  filter.frequency.setValueAtTime(freq * 1.5, start);
+  filter.frequency.linearRampToValueAtTime(freq * 4.5, start + 0.18);
+  filter.frequency.setTargetAtTime(freq * 3.2, start + 0.25, 0.2);
   const amp = ac.createGain();
   amp.gain.setValueAtTime(0, start);
-  amp.gain.linearRampToValueAtTime(volume, start + 0.03);
-  amp.gain.setValueAtTime(volume * 0.85, start + length - 0.06);
-  amp.gain.exponentialRampToValueAtTime(0.0001, start + length + 0.12);
-  const vibrato = ac.createOscillator();
-  const vibratoDepth = ac.createGain();
-  vibrato.frequency.value = 5.2;
-  vibratoDepth.gain.value = freq * 0.006;
-  vibrato.connect(vibratoDepth);
-  for (const detune of [-6, 5]) {
+  amp.gain.linearRampToValueAtTime(volume, start + 0.12);
+  amp.gain.setValueAtTime(volume * 0.9, start + length - 0.15);
+  amp.gain.exponentialRampToValueAtTime(0.0001, start + length + 0.25);
+  for (const [type, detune, mix] of [['sawtooth', -4, 0.7], ['triangle', 5, 1]] as const) {
     const osc = ac.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.value = freq;
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq * 0.94, start);
+    osc.frequency.exponentialRampToValueAtTime(freq, start + 0.14);
     osc.detune.value = detune;
-    vibratoDepth.connect(osc.frequency);
-    osc.connect(filter);
+    const g = ac.createGain();
+    g.gain.value = mix;
+    osc.connect(g).connect(filter);
     osc.start(start);
-    osc.stop(start + length + 0.2);
+    osc.stop(start + length + 0.3);
   }
   filter.connect(amp).connect(out());
-  vibrato.start(start);
-  vibrato.stop(start + length + 0.2);
+  hiss(ac, start, length * 0.6, volume * 0.25, 'bandpass', freq * 6, 1.5);
 }
 
-/** A war drum: a falling low thump with a skin slap. */
-function drum(ac: AudioContext, start: number, volume: number) {
+/** A church bell: deep and long, with the bright, inharmonic strike of bronze. */
+function churchBell(ac: AudioContext, freq: number, start: number, volume: number) {
+  // Bell partials: hum, prime, tierce, quint and nominal, each fading at its own pace.
+  for (const [ratio, level, decay] of [[0.5, 0.5, 4.5], [1, 0.7, 3.5], [1.2, 0.35, 2.4], [1.5, 0.25, 2], [2, 0.3, 1.6], [2.6, 0.12, 0.9]]) {
+    const osc = ac.createOscillator();
+    osc.frequency.value = freq * ratio;
+    const amp = ac.createGain();
+    amp.gain.setValueAtTime(0, start);
+    amp.gain.linearRampToValueAtTime(volume * level, start + 0.01);
+    amp.gain.exponentialRampToValueAtTime(0.0001, start + decay);
+    osc.connect(amp).connect(out());
+    osc.start(start);
+    osc.stop(start + decay + 0.1);
+  }
+}
+
+/** A frame drum struck with the hand: a soft low boom and a skin slap. */
+function frameDrum(ac: AudioContext, start: number, volume: number) {
   const osc = ac.createOscillator();
   const amp = ac.createGain();
-  osc.frequency.setValueAtTime(130, start);
-  osc.frequency.exponentialRampToValueAtTime(48, start + 0.35);
+  osc.frequency.setValueAtTime(110, start);
+  osc.frequency.exponentialRampToValueAtTime(55, start + 0.3);
   amp.gain.setValueAtTime(volume, start);
-  amp.gain.exponentialRampToValueAtTime(0.0001, start + 0.5);
+  amp.gain.exponentialRampToValueAtTime(0.0001, start + 0.45);
   osc.connect(amp).connect(out());
   osc.start(start);
-  osc.stop(start + 0.55);
-  const slap = ac.createBufferSource();
-  slap.buffer = noiseBuffer(ac);
-  const lp = ac.createBiquadFilter();
-  lp.type = 'lowpass';
-  lp.frequency.value = 900;
-  const slapAmp = ac.createGain();
-  slapAmp.gain.setValueAtTime(volume * 0.5, start);
-  slapAmp.gain.exponentialRampToValueAtTime(0.0001, start + 0.08);
-  slap.connect(lp).connect(slapAmp).connect(out());
-  slap.start(start, Math.random() * 0.5);
-  slap.stop(start + 0.1);
+  osc.stop(start + 0.5);
+  hiss(ac, start, 0.07, volume * 0.45, 'lowpass', 1200);
 }
 
 // ---- Game sounds ------------------------------------------------------------------
-
-/** Gold coins clinking onto a table, with a small bounce. */
-export function chipSound() {
-  const ac = audio();
-  if (!ac) return;
-  const t = ac.currentTime;
-  const f = 2400 + Math.random() * 500;
-  bell(ac, f, t, 0.22, 0.09, 1.4);
-  bell(ac, f * 1.32, t + 0.005, 0.12, 0.05, 1.2);
-  bell(ac, f * 0.97, t + 0.07 + Math.random() * 0.03, 0.12, 0.04, 1.2);
-}
-
-/** A sheet of parchment sliding and rustling. */
-export function cardSound() {
-  const ac = audio();
-  if (!ac) return;
-  const t = ac.currentTime;
-  const src = ac.createBufferSource();
-  src.buffer = noiseBuffer(ac);
-  const band = ac.createBiquadFilter();
-  band.type = 'bandpass';
-  band.Q.value = 0.8;
-  band.frequency.setValueAtTime(1400, t);
-  band.frequency.linearRampToValueAtTime(2600, t + 0.25);
-  const amp = ac.createGain();
-  // A crackly envelope: several quick swells rather than one smooth hiss.
-  amp.gain.setValueAtTime(0, t);
-  let at = t;
-  for (let i = 0; i < 6; i++) {
-    at += 0.03 + Math.random() * 0.025;
-    amp.gain.linearRampToValueAtTime(0.06 + Math.random() * 0.1, at);
-    amp.gain.linearRampToValueAtTime(0.02, at + 0.015);
-  }
-  amp.gain.linearRampToValueAtTime(0, at + 0.06);
-  src.connect(band).connect(amp).connect(out());
-  src.start(t, Math.random() * 0.5);
-  src.stop(at + 0.1);
-}
-
-/** A handbell's "ding-dong" announcing your turn. */
-export function turnChime() {
-  const ac = audio();
-  if (!ac) return;
-  const t = ac.currentTime;
-  bell(ac, 784, t, 1.4, 0.13);
-  bell(ac, 587.3, t + 0.32, 1.8, 0.13);
-}
-
-/** A rising lute arpeggio for renown or a noble house's allegiance (D Dorian). */
-export function sparkleSound() {
-  const ac = audio();
-  if (!ac) return;
-  const t = ac.currentTime;
-  [293.7, 349.2, 440, 587.3].forEach((f, i) => pluck(ac, f, t + i * 0.085, 0.35));
-  pluck(ac, 880, t + 0.42, 0.22);
-}
-
-/** Herald trumpets and a war drum for the end of the game. */
-export function fanfare() {
-  const ac = audio();
-  if (!ac) return;
-  const t = ac.currentTime;
-  drum(ac, t, 0.5);
-  const notes: [number, number, number][] = [
-    [261.6, 0.0, 0.16], [261.6, 0.2, 0.16], [261.6, 0.4, 0.16], [392, 0.6, 0.5], [329.6, 1.15, 0.22], [392, 1.4, 0.22], [523.3, 1.65, 1.1],
-  ];
-  for (const [f, at, len] of notes) trumpet(ac, f, t + at, len, 0.07);
-  for (const [f, at, len] of notes.slice(3)) trumpet(ac, f / 2, t + at, len, 0.04);
-  drum(ac, t + 0.6, 0.4);
-  drum(ac, t + 1.65, 0.55);
-  drum(ac, t + 1.85, 0.35);
-}
 
 /** A wooden tile set down on the table: a dull knock with a short click. */
 export function tileSound() {
@@ -260,16 +200,58 @@ export function tileSound() {
   osc.connect(amp).connect(out());
   osc.start(t);
   osc.stop(t + 0.18);
-  const click = ac.createBufferSource();
-  click.buffer = noiseBuffer(ac);
-  const band = ac.createBiquadFilter();
-  band.type = 'bandpass';
-  band.frequency.value = 1800;
-  band.Q.value = 1.2;
-  const clickAmp = ac.createGain();
-  clickAmp.gain.setValueAtTime(0.25, t);
-  clickAmp.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
-  click.connect(band).connect(clickAmp).connect(out());
-  click.start(t, Math.random() * 0.5);
-  click.stop(t + 0.05);
+  hiss(ac, t, 0.04, 0.25, 'bandpass', 1800, 1.2);
+}
+
+/** A banner planted: the pole thuds into the turf and the cloth flaps twice. */
+export function bannerSound() {
+  const ac = audio();
+  if (!ac) return;
+  const t = ac.currentTime;
+  const osc = ac.createOscillator();
+  const amp = ac.createGain();
+  osc.frequency.setValueAtTime(150, t);
+  osc.frequency.exponentialRampToValueAtTime(70, t + 0.12);
+  amp.gain.setValueAtTime(0.3, t);
+  amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+  osc.connect(amp).connect(out());
+  osc.start(t);
+  osc.stop(t + 0.22);
+  hiss(ac, t + 0.08, 0.12, 0.12, 'bandpass', 900, 0.7);
+  hiss(ac, t + 0.2, 0.1, 0.08, 'bandpass', 1100, 0.7);
+}
+
+/** A cow horn calls your turn: a low note rising to its fifth. */
+export function turnChime() {
+  const ac = audio();
+  if (!ac) return;
+  const t = ac.currentTime;
+  horn(ac, 146.8, t, 0.32, 0.11); // D3
+  horn(ac, 220, t + 0.34, 0.6, 0.11); // A3
+}
+
+/** A rising run on the lyre when you score (D pentatonic, as an old harper might tune it). */
+export function sparkleSound() {
+  const ac = audio();
+  if (!ac) return;
+  const t = ac.currentTime;
+  [293.7, 329.6, 392, 440, 587.3].forEach((f, i) => lyre(ac, f, t + i * 0.09, 0.42));
+  lyre(ac, 440, t + 0.5, 0.28);
+  lyre(ac, 587.3, t + 0.5, 0.22);
+}
+
+/** The end of the game: war horns answer each other over a frame drum, and the church bell tolls. */
+export function fanfare() {
+  const ac = audio();
+  if (!ac) return;
+  const t = ac.currentTime;
+  frameDrum(ac, t, 0.5);
+  horn(ac, 110, t + 0.05, 0.9, 0.12); // A2, long
+  frameDrum(ac, t + 0.6, 0.35);
+  horn(ac, 146.8, t + 1.05, 0.5, 0.1); // D3 answers
+  horn(ac, 164.8, t + 1.6, 1.2, 0.12); // E3, held
+  frameDrum(ac, t + 1.2, 0.4);
+  frameDrum(ac, t + 1.6, 0.55);
+  churchBell(ac, 196, t + 2.3, 0.16);
+  churchBell(ac, 196, t + 3.6, 0.12);
 }
