@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import {
-  COLORS, SIZE, canPlace, tilesAt,
+  COLORS, FLOOR_PENALTIES, SIZE, canPlace, floorPenalty, tilesAt,
   type Action, type Color, type GameView, type PlayerState, type Source, type Target,
 } from '../shared/game';
 import type { ClientMessage, RoomInfo } from '../shared/protocol';
@@ -9,7 +9,7 @@ import { RuleBook } from './RuleBook';
 import { UiIcon } from './UiIcon';
 import { BOT_LEVEL_INFO, type BotLevel } from '../shared/botLevels';
 import { fanfare, isMuted, setMuted } from './sfx';
-import { Crest, Seal, Seam, MiniWall, Num, Tile, PlayerBoard, cx } from './pieces';
+import { Crest, Seal, Seam, MiniWall, Num, Tile, PlayerBoard, cx, type Placement } from './pieces';
 import { PRESET_ARMS, type Arms } from '../shared/heraldry';
 import { GAME_NAME, POINTS_NAME, colorName } from '../shared/theme';
 
@@ -17,9 +17,11 @@ interface Selection {
   key: number;
   source: Source | null;
   color: Color | null;
+  /** Where the player means to put the tiles; nothing happens until they confirm. */
+  target: Target | null;
 }
 
-const freshSelection = (key: number): Selection => ({ key, source: null, color: null });
+const freshSelection = (key: number): Selection => ({ key, source: null, color: null, target: null });
 
 const NARROW = '(max-width: 1099px)';
 
@@ -133,13 +135,22 @@ export function Game({ room, game, you, act, send, leave, notify }: {
   const pick = (source: Source, color: Color) => {
     if (!myTurn) return;
     if (sel.source === source && sel.color === color) return reset();
-    setSel({ key: game.turn, source, color });
+    setSel({ key: game.turn, source, color, target: null });
   };
+  /** Choose where the tiles go; choosing the same place again confirms it. */
   const place = (target: Target) => {
     if (sel.source === null || !sel.color) return;
-    act({ type: 'take', source: sel.source, color: sel.color, target });
+    if (sel.target === target) return confirmMove();
+    setSel({ ...sel, target });
+  };
+  const confirmMove = () => {
+    if (sel.source === null || !sel.color || sel.target === null) return;
+    act({ type: 'take', source: sel.source, color: sel.color, target: sel.target });
     reset();
   };
+  const placement: Placement | null = me && sel.source !== null && sel.color && sel.target !== null
+    ? { target: sel.target, color: sel.color, count: tilesAt(game, sel.source).filter((c) => c === sel.color).length, seal: sel.source === 'center' && game.firstInCenter }
+    : null;
   const validRows = me && sel.color ? Array.from({ length: SIZE }, (_, r) => r).filter((r) => canPlace(me, r, sel.color!)) : [];
   /** Say why a row can't take the tiles in hand. */
   const explainRow = (r: number) => {
@@ -151,10 +162,13 @@ export function Game({ room, game, you, act, send, leave, notify }: {
     return notify(`Your wall already has ${glaze} in row ${r + 1}, so that row can't take more.`);
   };
 
-  // Escape puts the tiles back.
+  // Escape puts the tiles back; Enter confirms a planned move.
   useEffect(() => {
     if (!myTurn) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && reset();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') reset();
+      else if (e.key === 'Enter' && sel.target !== null) confirmMove();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
@@ -242,7 +256,7 @@ export function Game({ room, game, you, act, send, leave, notify }: {
         {me ? (
           <section className={cx('dock', myTurn && 'active')} ref={dockRef}>
             <div className="prompt">
-              <ActionBar game={game} myTurn={myTurn} sel={sel} validRows={validRows} place={place} reset={reset} onShowResults={() => setShowResults(true)} />
+              <ActionBar game={game} me={me} myTurn={myTurn} sel={sel} validRows={validRows} place={place} confirm={confirmMove} unplan={() => setSel({ ...sel, target: null })} reset={reset} onShowResults={() => setShowResults(true)} />
             </div>
             <div className="my-side">
               <TurnStamp item={announcement} you={you} />
@@ -260,6 +274,7 @@ export function Game({ room, game, you, act, send, leave, notify }: {
                 validRows={validRows}
                 onRow={myTurn ? (r) => place(r) : undefined}
                 onBlocked={myTurn ? explainRow : undefined}
+                placement={myTurn ? placement : null}
                 onFloor={myTurn ? () => place('floor') : undefined}
                 fresh={fresh.get(me.id)}
                 flyPrefix={me.id}
@@ -381,12 +396,15 @@ function RivalPanel({ player: p, isCurrent, offline, left, bot, level, arms, can
   );
 }
 
-function ActionBar({ game, myTurn, sel, validRows, place, reset, onShowResults }: {
+function ActionBar({ game, me, myTurn, sel, validRows, place, confirm, unplan, reset, onShowResults }: {
   game: GameView;
+  me: PlayerState;
   myTurn: boolean;
   sel: Selection;
   validRows: number[];
   place: (target: Target) => void;
+  confirm: () => void;
+  unplan: () => void;
   reset: () => void;
   onShowResults: () => void;
 }) {
@@ -399,12 +417,33 @@ function ActionBar({ game, myTurn, sel, validRows, place, reset, onShowResults }
   }
   const count = tilesAt(game, sel.source).filter((c) => c === sel.color).length;
   const token = sel.source === 'center' && game.firstInCenter;
+  if (sel.target !== null) {
+    // The move is planned: say exactly what it will do, and wait for the player to confirm.
+    const glaze = colorName(sel.color);
+    const fits = sel.target === 'floor' ? 0 : Math.min(count, sel.target + 1 - me.lines[sel.target].count);
+    const broken = count - fits;
+    const cost = floorPenalty(Math.min(FLOOR_PENALTIES.length, me.floor.length + broken + (token ? 1 : 0))) - floorPenalty(me.floor.length);
+    return (
+      <>
+        <span className="prompt-text">
+          <span className="prompt-tiles">{Array.from({ length: count }, (_, i) => <Tile key={i} color={sel.color!} />)}{token && <Seal />}</span>
+          {sel.target === 'floor'
+            ? <> Drop {count} {glaze} on the floor?</>
+            : <> Put {fits} {glaze} in row {sel.target + 1}{broken ? <>, and break {broken}</> : null}?</>}
+          {cost > 0 && <span className="cost"> −{cost} {cost === 1 ? 'point' : 'points'}</span>}
+        </span>
+        <button className="btn primary" onClick={confirm}>Confirm</button>
+        <button className="btn" onClick={unplan}>Change</button>
+        <button className="btn ghost" onClick={reset}>Cancel</button>
+      </>
+    );
+  }
   return (
     <>
       <span className="prompt-text">
         <span className="prompt-tiles">{Array.from({ length: count }, (_, i) => <Tile key={i} color={sel.color!} />)}{token && <Seal />}</span>
         {validRows.length
-          ? <> Tap a glowing row for {count} {colorName(sel.color)}, or the floor.</>
+          ? <> Choose a glowing row for {count} {colorName(sel.color)}, or the floor.</>
           : <> No row can take {colorName(sel.color)}: they go to the floor.</>}
         {token && <span className="muted"> You also take the master’s seal: you start next round, but it costs 1.</span>}
       </span>

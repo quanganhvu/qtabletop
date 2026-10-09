@@ -720,3 +720,20 @@ body {
 /* ---- The maker's hanko on the front page ---- */
 .seal { width: 76px; height: 76px; right: 20px; bottom: 18px; transform: rotate(-4deg); filter: none; opacity: 0.95; mix-blend-mode: multiply; }
 .hanko { width: 100%; height: 100%; display: block; }
+
+/* ---- A planned move, waiting to be confirmed ---- */
+.tile.preview {
+  opacity: 0.62; transform: translateY(-2px);
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var(--accent), 0 4px 10px rgb(50 35 10 / 0.3);
+  animation: preview-pulse 0.9s ease-in-out infinite alternate;
+}
+.preview-seal { display: inline-flex; opacity: 0.62; border-radius: 4px; box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var(--accent); animation: preview-pulse 0.9s ease-in-out infinite alternate; }
+@keyframes preview-pulse { to { opacity: 0.9; } }
+.line.chosen, .line.chosen:hover { animation: none; transform: none; box-shadow: 0 0 0 3px var(--paper), 0 0 0 6px var(--accent), 0 0 18px rgb(194 59 34 / 0.4); }
+.floor.chosen { box-shadow: 0 0 0 4px var(--paper), 0 0 0 7px var(--warn), 0 0 18px rgb(181 72 31 / 0.4); }
+.prompt-text .cost { font-weight: 700; color: var(--warn); white-space: nowrap; }
+@media (max-width: 1099px) {
+  /* On phones the question gets its own line, the buttons share the line below. */
+  .dock .prompt-text { flex: 1 1 100%; }
+  .dock .prompt .btn { flex: 1; }
+}

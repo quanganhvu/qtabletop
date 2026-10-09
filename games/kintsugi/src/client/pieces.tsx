@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { FLOOR_PENALTIES, wallColor, type Color, type FloorItem, type PlayerState } from '../shared/game';
+import { FLOOR_PENALTIES, wallColor, type Color, type FloorItem, type PlayerState, type Target } from '../shared/game';
 import type { Arms } from '../shared/heraldry';
 import { GLAZES, TOKEN_NAME, colorName } from '../shared/theme';
 import { kamonUrl } from './art/kamon';
@@ -35,9 +35,11 @@ const MOTIFS: Record<string, ReactNode> = {
 };
 
 /** A glazed ceramic tile. `ghost`: the faint print on a board showing where a glaze belongs. */
-export function Tile({ color, ghost, selected, dim, fresh, onClick, title, fly, style }: {
+export function Tile({ color, ghost, preview, selected, dim, fresh, onClick, title, fly, style }: {
   color: Color;
   ghost?: boolean;
+  /** Where tiles in hand would land, before the move is confirmed. */
+  preview?: boolean;
   selected?: boolean;
   dim?: boolean;
   fresh?: boolean;
@@ -50,7 +52,7 @@ export function Tile({ color, ghost, selected, dim, fresh, onClick, title, fly, 
   return (
     <Tag
       type={onClick ? 'button' : undefined}
-      className={cx('tile', color, ghost && 'ghost', selected && 'selected', dim && 'dim', fresh && 'fresh', onClick && 'clickable')}
+      className={cx('tile', color, ghost && 'ghost', preview && 'preview', selected && 'selected', dim && 'dim', fresh && 'fresh', onClick && 'clickable')}
       onClick={onClick}
       title={title ?? (ghost ? undefined : colorName(color, true))}
       aria-label={title ?? colorName(color, true)}
@@ -81,9 +83,13 @@ export function Seam({ className }: { className?: string }) {
   );
 }
 
-function FloorPiece({ item }: { item: FloorItem }) {
-  return item === 'first' ? <Seal /> : <Tile color={item} />;
+function FloorPiece({ item, preview }: { item: FloorItem; preview?: boolean }) {
+  if (item === 'first') return preview ? <span className="preview-seal"><Seal /></span> : <Seal />;
+  return <Tile color={item} preview={preview} />;
 }
+
+/** The tiles in hand and where the player means to put them, shown on the board until confirmed. */
+export interface Placement { target: Target; color: Color; count: number; seal: boolean }
 
 /**
  * A potter's board: work rows (stepped, filling towards the wall) beside the wall,
@@ -91,13 +97,14 @@ function FloorPiece({ item }: { item: FloorItem }) {
  * that can take `color` light up and can be tapped; tapping one that can't calls
  * `onBlocked`, so the player can be told why.
  */
-export function PlayerBoard({ player, color, validRows, onRow, onBlocked, onFloor, fresh, flyPrefix, compact }: {
+export function PlayerBoard({ player, color, validRows, onRow, onBlocked, onFloor, placement, fresh, flyPrefix, compact }: {
   player: PlayerState;
   color?: Color | null;
   validRows?: number[];
   onRow?: (r: number) => void;
   onBlocked?: (r: number) => void;
   onFloor?: () => void;
+  placement?: Placement | null;
   /** Wall cells set this round, to make them glow. */
   fresh?: Set<string>;
   /** Prefix for fly targets; none when this board is a copy (e.g. a pop-up sheet). */
@@ -106,6 +113,10 @@ export function PlayerBoard({ player, color, validRows, onRow, onBlocked, onFloo
 }) {
   const choosing = !!color && !!onRow;
   const FloorTag = choosing && onFloor ? 'button' : 'div';
+  // A planned placement: how many tiles fit the chosen row, and what spills onto the floor.
+  const plannedRow = placement && placement.target !== 'floor' ? placement.target : null;
+  const fits = plannedRow === null ? 0 : Math.min(placement!.count, plannedRow + 1 - player.lines[plannedRow].count);
+  const spill: FloorItem[] = placement ? [...(placement.seal ? ['first' as const] : []), ...Array<Color>(placement.count - fits).fill(placement.color)] : [];
   return (
     <div className={cx('pboard', compact && 'compact', choosing && 'choosing')}>
       <Seam />
@@ -119,7 +130,7 @@ export function PlayerBoard({ player, color, validRows, onRow, onBlocked, onFloo
               <Tag
                 key={r}
                 type={Tag === 'button' ? 'button' : undefined}
-                className={cx('line', valid && 'valid', blocked && 'blocked')}
+                className={cx('line', valid && 'valid', blocked && 'blocked', plannedRow === r && 'chosen')}
                 onClick={valid ? () => onRow!(r) : blocked && onBlocked ? () => onBlocked(r) : undefined}
                 aria-label={valid ? `Row ${r + 1}` : blocked ? `Row ${r + 1} (can't take these)` : undefined}
                 data-fly={flyPrefix && `${flyPrefix}-line-${r}`}
@@ -127,7 +138,9 @@ export function PlayerBoard({ player, color, validRows, onRow, onBlocked, onFloo
                 {Array.from({ length: r + 1 }, (_, i) => {
                   // Tiles fill from the right, next to the wall.
                   const filled = i >= r + 1 - line.count;
-                  return filled && line.color ? <Tile key={i} color={line.color} /> : <span key={i} className="slot" />;
+                  if (filled && line.color) return <Tile key={i} color={line.color} />;
+                  if (plannedRow === r && i >= r + 1 - line.count - fits) return <Tile key={i} color={placement!.color} preview />;
+                  return <span key={i} className="slot" />;
                 })}
               </Tag>
             );
@@ -141,7 +154,7 @@ export function PlayerBoard({ player, color, validRows, onRow, onBlocked, onFloo
       </div>
       <FloorTag
         type={FloorTag === 'button' ? 'button' : undefined}
-        className={cx('floor', FloorTag === 'button' && 'valid')}
+        className={cx('floor', FloorTag === 'button' && 'valid', placement?.target === 'floor' && 'chosen')}
         onClick={FloorTag === 'button' ? onFloor : undefined}
         aria-label={choosing ? 'Drop them on the floor' : 'Floor'}
         data-fly={flyPrefix && `${flyPrefix}-floor`}
@@ -149,7 +162,9 @@ export function PlayerBoard({ player, color, validRows, onRow, onBlocked, onFloo
         {FLOOR_PENALTIES.map((pen, i) => (
           <span key={i} className="floor-slot">
             <span className="pen">−{pen}</span>
-            {player.floor[i] ? <FloorPiece item={player.floor[i]} /> : <span className="slot" />}
+            {player.floor[i]
+              ? <FloorPiece item={player.floor[i]} />
+              : spill[i - player.floor.length] ? <FloorPiece item={spill[i - player.floor.length]} preview /> : <span className="slot" />}
           </span>
         ))}
       </FloorTag>
