@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kintsugi",
+  "main": "src/server/index.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/parties/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "TeaRoom", "class_name": "TeaRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TeaRoom"] }],
+  "observability": { "enabled": true }
+}
