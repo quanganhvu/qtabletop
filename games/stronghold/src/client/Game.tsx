@@ -97,6 +97,26 @@ export function Game({ room, game, you, act, send, leave, notify }: {
 
   // Opponents are listed in turn order starting after you, like seats around a table.
   const opponents = me ? [...game.players.slice(meIndex + 1), ...game.players.slice(0, meIndex)] : game.players;
+  const [openOpp, setOpenOpp] = useState<string | null>(null);
+  const openOppPlayer = narrow ? opponents.find((p) => p.id === openOpp) : undefined;
+  // The full panel is a sheet over the board on phones, so its fly targets must not
+  // steal the compact chip's: it carries none (`sheet`).
+  const opponentPanel = (p: PlayerView, sheet = false) => (
+    <OpponentPanel
+      key={p.id}
+      player={p}
+      isCurrent={game.phase !== 'over' && game.players[game.current].id === p.id}
+      acting={actingId === p.id}
+      offline={!seat(p.id)?.connected}
+      left={!!seat(p.id)?.left}
+      bot={!!seat(p.id)?.bot}
+      level={seat(p.id)?.level}
+      arms={armsOf(p.id)}
+      canClaim={!me}
+      onClaim={() => send({ type: 'claimSeat', seatId: p.id })}
+      sheet={sheet}
+    />
+  );
 
   useEffect(() => {
     document.title = myTurn ? `● Your turn · ${GAME_NAME}` : GAME_NAME;
@@ -149,23 +169,35 @@ export function Game({ room, game, you, act, send, leave, notify }: {
       </header>
 
       <div className="arena">
-      <section className="opponents">
-        {opponents.map((p) => (
-          <OpponentPanel
-            key={p.id}
-            player={p}
-            isCurrent={game.phase !== 'over' && game.players[game.current].id === p.id}
-            acting={actingId === p.id}
-            offline={!seat(p.id)?.connected}
-            left={!!seat(p.id)?.left}
-            bot={!!seat(p.id)?.bot}
-            level={seat(p.id)?.level}
-            arms={armsOf(p.id)}
-            canClaim={!me}
-            onClaim={() => send({ type: 'claimSeat', seatId: p.id })}
-          />
-        ))}
-      </section>
+      {narrow ? (
+        // Phones: one compact chip per opponent; tap one to see their full side of the table.
+        <section className="opponents compact" style={{ '--opps': opponents.length } as CSSProperties}>
+          {opponents.map((p) => (
+            <OpponentChip
+              key={p.id}
+              player={p}
+              isCurrent={game.phase !== 'over' && game.players[game.current].id === p.id}
+              acting={actingId === p.id}
+              offline={!seat(p.id)?.connected}
+              open={openOpp === p.id}
+              arms={armsOf(p.id)}
+              onClick={() => setOpenOpp(openOpp === p.id ? null : p.id)}
+            />
+          ))}
+          {openOppPlayer && (
+            <>
+              <div className="opp-sheet-backdrop" onClick={() => setOpenOpp(null)} />
+              <div className="opp-sheet" onClick={() => setOpenOpp(null)}>
+                {opponentPanel(openOppPlayer, true)}
+              </div>
+            </>
+          )}
+        </section>
+      ) : (
+        <section className="opponents">
+          {opponents.map((p) => opponentPanel(p))}
+        </section>
+      )}
 
       <main className="table">
         <div className="board">
@@ -211,7 +243,8 @@ export function Game({ room, game, you, act, send, leave, notify }: {
                   color={color}
                   fly={`bank-${color}`}
                   count={game.bank[color] - picked}
-                  size={narrow ? 46 : 58}
+                  size={narrow ? 42 : 58}
+                  maxLayers={narrow ? 3 : undefined}
                   picked={picked > 0}
                   onClick={clickable ? () => pickToken(color) : undefined}
                   title={color === 'gold' ? 'Gold crowns are wild: you receive one when you reserve a card' : `${RESOURCES[color].plural}: click to take`}
@@ -278,8 +311,9 @@ function Status({ game, myTurn }: { game: GameView; myTurn: boolean }) {
   );
 }
 
-function OpponentPanel({ player: p, isCurrent, acting, offline, left, bot, level, arms, canClaim, onClaim }: {
+function OpponentPanel({ player: p, isCurrent, acting, offline, left, bot, level, arms, canClaim, onClaim, sheet = false }: {
   player: PlayerView;
+  sheet?: boolean;
   level?: BotLevel;
   left: boolean;
   arms: Arms;
@@ -290,6 +324,7 @@ function OpponentPanel({ player: p, isCurrent, acting, offline, left, bot, level
   canClaim: boolean;
   onClaim: () => void;
 }) {
+  const fly = (key: string) => (sheet ? undefined : key);
   return (
     <div className={cx('opponent', isCurrent && 'current', acting && 'acting', offline && 'offline')}>
       <div className="opp-head">
@@ -298,28 +333,69 @@ function OpponentPanel({ player: p, isCurrent, acting, offline, left, bot, level
         {offline && <span className="tag muted">offline</span>}
         {(offline || left) && canClaim && <button className="btn tiny" onClick={onClaim}>Take seat</button>}
         {p.nobles.length > 0 && <span className="opp-nobles" title={`${p.nobles.length} noble house(s)`}>{p.nobles.map((n) => <NobleView key={n.id} noble={n} size="mini" />)}</span>}
-        <span key={p.points} className="opp-pts pop" data-fly={`points-${p.id}`} title="Renown"><Num>{p.points}{POINTS_SYMBOL}</Num></span>
+        <span key={p.points} className="opp-pts pop" data-fly={fly(`points-${p.id}`)} title="Renown"><Num>{p.points}{POINTS_SYMBOL}</Num></span>
       </div>
       <div className="opp-assets">
         {TOKEN_COLORS.map((c) => (
           <div className="opp-asset" key={c}>
             {c === 'gold'
               ? <span className="mini-bonus placeholder" />
-              : <span className={cx('mini-bonus', c, !p.bonuses[c] && 'zero')} title={`${c} cards`} data-fly={`bonus-${p.id}-${c}`}><Num>{p.bonuses[c]}</Num></span>}
-            <Chip color={c} count={p.tokens[c]} faded={!p.tokens[c]} fly={`tok-${p.id}-${c}`} />
+              : <span className={cx('mini-bonus', c, !p.bonuses[c] && 'zero')} title={`${c} cards`} data-fly={fly(`bonus-${p.id}-${c}`)}><Num>{p.bonuses[c]}</Num></span>}
+            <Chip color={c} count={p.tokens[c]} faded={!p.tokens[c]} fly={fly(`tok-${p.id}-${c}`)} />
           </div>
         ))}
       </div>
       <div className="opp-foot">
         <span className="muted small">{tokenTotal(p.tokens)}/{MAX_TOKENS} resources · {p.cardCount} holdings</span>
-        <span className="opp-reserved" data-fly={`reserve-${p.id}`}>
+        <span className="opp-reserved" data-fly={fly(`reserve-${p.id}`)}>
           {p.reserved.map((c, i) => (isHidden(c)
             ? <CardView key={`h${i}`} card={c} size="mini" />
-            : <CardPeek key={c.id} card={c} fly={`card-${c.id}`} />))}
+            : <CardPeek key={c.id} card={c} fly={fly(`card-${c.id}`)} />))}
         </span>
       </div>
       {isCurrent && <div className="thinking-bar" />}
     </div>
+  );
+}
+
+/** An opponent at a glance, for phones: arms, name, renown, holdings by color, coins and reserves. */
+function OpponentChip({ player: p, isCurrent, acting, offline, open, arms, onClick }: {
+  player: PlayerView;
+  isCurrent: boolean;
+  acting: boolean;
+  offline: boolean;
+  open: boolean;
+  arms: Arms;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={cx('opp-chip', isCurrent && 'current', acting && 'acting', offline && 'offline', open && 'open')}
+      onClick={onClick}
+      aria-expanded={open}
+      aria-label={`${p.name}: ${p.points} renown. Show details`}
+    >
+      <span className="oc-head">
+        <Crest arms={arms} size={18} />
+        <span className="oc-name">{p.name}</span>
+        <span key={p.points} className="opp-pts pop" data-fly={`points-${p.id}`}><Num>{p.points}{POINTS_SYMBOL}</Num></span>
+      </span>
+      <span className="oc-assets">
+        {COLORS.map((c) => (
+          <span key={c} className={cx('oc-bonus', c, !p.bonuses[c] && 'zero')} data-fly={`bonus-${p.id}-${c}`}><Num>{p.bonuses[c]}</Num></span>
+        ))}
+        <span className="oc-coins" title="Resources held">
+          {/* Landing spots for coins flying to this player, one per resource. */}
+          {TOKEN_COLORS.map((c) => <span key={c} className="fly-anchor" data-fly={`tok-${p.id}-${c}`} />)}
+          <Num>{tokenTotal(p.tokens)}</Num>
+        </span>
+        <span className={cx('oc-reserved', !p.reserved.length && 'zero')} data-fly={`reserve-${p.id}`} title="Reserved cards">
+          <Num>{p.reserved.length}</Num>
+        </span>
+      </span>
+      {isCurrent && <div className="thinking-bar" />}
+    </button>
   );
 }
 
@@ -345,11 +421,11 @@ function Dock({ dockRef, narrow, game, me, arms, myTurn, sel, update, reset, doA
   return (
     <div className={cx('dock', myTurn && 'active')} ref={dockRef}>
       <div className="prompt">
-        <ActionBar game={game} me={me} myTurn={myTurn} sel={sel} reset={reset} doAction={doAction} adjustDiscard={adjustDiscard} onShowResults={onShowResults} />
+        <ActionBar narrow={narrow} game={game} me={me} myTurn={myTurn} sel={sel} reset={reset} doAction={doAction} adjustDiscard={adjustDiscard} onShowResults={onShowResults} />
       </div>
       <div className="tableau">
         <div className="me-id">
-          <div className="me-crest"><Crest arms={arms} size={narrow ? 44 : 72} /></div>
+          <div className="me-crest"><Crest arms={arms} size={narrow ? 30 : 72} /></div>
           <div className="me-info">
             <div className="me-name" title={me.name}>{me.name}</div>
             <div className="me-row">
@@ -385,7 +461,8 @@ function Dock({ dockRef, narrow, game, me, arms, myTurn, sel, update, reset, doA
                   color={c}
                   fly={`tok-${me.id}-${c}`}
                   count={held}
-                  size={narrow ? 38 : 50}
+                  size={narrow ? 32 : 50}
+                  maxLayers={narrow ? 3 : undefined}
                   onClick={canDiscard ? () => adjustDiscard(c, 1) : undefined}
                   title={canDiscard ? `Return one ${resource(c)}` : resource(c, 2)}
                 />
@@ -433,7 +510,8 @@ function BonusPile({ color, count, fly }: { color: Color; count: number; fly: st
   );
 }
 
-function ActionBar({ game, me, myTurn, sel, reset, doAction, adjustDiscard, onShowResults }: {
+function ActionBar({ narrow, game, me, myTurn, sel, reset, doAction, adjustDiscard, onShowResults }: {
+  narrow: boolean;
   game: GameView;
   me: PlayerView;
   myTurn: boolean;
@@ -453,7 +531,7 @@ function ActionBar({ game, me, myTurn, sel, reset, doAction, adjustDiscard, onSh
     const chosen = tokenTotal(sel.discard);
     return (
       <>
-        <span>Your coffers are full! <b>Click your coins below</b> to return {excess - chosen > 0 ? <b>{excess - chosen} more</b> : 'them'}.</span>
+        <span>Your coffers are full! <b>{narrow ? 'Tap' : 'Click'} your coins below</b> to return {excess - chosen > 0 ? <b>{excess - chosen} more</b> : 'them'}.</span>
         {chosen > 0 && (
           <span className="chips">
             {TOKEN_COLORS.filter((c) => sel.discard[c] > 0).map((c) => (
@@ -469,7 +547,7 @@ function ActionBar({ game, me, myTurn, sel, reset, doAction, adjustDiscard, onSh
   }
 
   if (game.phase === 'noble') {
-    return <span>Several noble houses wish to pledge to you. <b>Pick one</b> at the top of the board.</span>;
+    return <span>Several noble houses wish to pledge to you. <b>{narrow ? 'Tap' : 'Pick'} one</b> at the top of the board.</span>;
   }
 
   if (sel.tokens.length) {
@@ -477,7 +555,7 @@ function ActionBar({ game, me, myTurn, sel, reset, doAction, adjustDiscard, onSh
       <>
         <span>Take:</span>
         <span className="chips">{sel.tokens.map((c, i) => <Chip key={i} color={c} />)}</span>
-        <button className="btn primary" onClick={() => doAction({ type: 'take', colors: sel.tokens })}>Take resources</button>
+        <button className="btn primary" onClick={() => doAction({ type: 'take', colors: sel.tokens })}>{narrow ? 'Take' : 'Take resources'}</button>
         <button className="btn ghost" onClick={reset}>Cancel</button>
       </>
     );
@@ -530,7 +608,9 @@ function ActionBar({ game, me, myTurn, sel, reset, doAction, adjustDiscard, onSh
 
   return (
     <>
-      <span><b className="accent">Your turn!</b> Take resources from the treasury, or click a card to buy or reserve it.</span>
+      {narrow
+        ? <span className="prompt-text"><b className="accent">Your turn!</b> Tap coins to take, or a card to buy.</span>
+        : <span><b className="accent">Your turn!</b> Take resources from the treasury, or click a card to buy or reserve it.</span>}
       <button
         className="btn ghost small"
         title="Only if you can't do anything else"
