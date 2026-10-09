@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Kintsugi: an indigo-glazed tea bowl, its cracks mended in gold -->
+  <defs>
+    <linearGradient id="clay" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e9dcc3"/><stop offset=".45" stop-color="#f8f1e3"/><stop offset="1" stop-color="#cdbb9b"/>
+    </linearGradient>
+    <linearGradient id="glaze" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1c3566"/><stop offset=".4" stop-color="#34589a"/><stop offset="1" stop-color="#162a52"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7dc8a"/><stop offset=".5" stop-color="#d4a640"/><stop offset="1" stop-color="#a77a1f"/>
+    </linearGradient>
+    <radialGradient id="inside" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#3e64a8"/><stop offset="1" stop-color="#14264a"/></radialGradient>
+  </defs>
+  <ellipse cx="32" cy="55" rx="20" ry="3.2" fill="#000" opacity=".16"/>
+  <!-- foot ring -->
+  <path d="M24 50h16l-1.2 4H25.2z" fill="#c2ad88"/>
+  <!-- the bowl: clay below, glaze poured over the top and running down -->
+  <path d="M7 22c0 15 10.5 28.5 25 28.5S57 37 57 22z" fill="url(#clay)"/>
+  <path d="M7 22c0 6 1.6 11.4 4.4 15.8 1.4-1.6 2.8.6 4.2 2 1.8-2.6 3.4-.4 5 1.4 1.6-2.4 3.2-2.6 4.8.4 1.6-3 3.4-3.2 5.2-.6 1.8-2.8 3.6-2.2 5 .6 1.6-3.2 3.4-2.8 5-.6 1.4-1.6 2.8-3 4.2-1.2C55.4 33.4 57 28 57 22z" fill="url(#glaze)"/>
+  <!-- rim and the glaze pooled inside -->
+  <ellipse cx="32" cy="22" rx="25" ry="6.2" fill="#24427c"/>
+  <ellipse cx="32" cy="22.4" rx="22.4" ry="4.8" fill="url(#inside)"/>
+  <path d="M10 21.2c4-3 13-4.6 22-4.6" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- gold seams -->
+  <g fill="none" stroke="url(#gold)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19 16.6l2.6 6.2-3 5.4 3.6 6.6-1.4 6.8 2.8 5.6" stroke-width="1.9"/>
+    <path d="M18.2 28.2l-5.2 3.2" stroke-width="1.4"/>
+    <path d="M44.5 17.4l-2.2 7.6 3.6 4.4-2 7.2 1.8 6.6" stroke-width="1.7"/>
+    <path d="M45.9 29.4l5.4-1.2" stroke-width="1.3"/>
+  </g>
+</svg>
