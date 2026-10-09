@@ -79,7 +79,7 @@ function useFreshPanes(game: GameView): Map<string, Set<string>> {
   return fresh;
 }
 
-export function Game({ room, game, you, act, send, leave }: {
+export function Game({ room, game, you, act, send, leave, notify }: {
   room: RoomInfo;
   game: GameView;
   you: string | null;
@@ -141,6 +141,15 @@ export function Game({ room, game, you, act, send, leave }: {
     reset();
   };
   const validRows = me && sel.color ? Array.from({ length: SIZE }, (_, r) => r).filter((r) => canPlace(me, r, sel.color!)) : [];
+  /** Say why a row can't take the tiles in hand. */
+  const explainRow = (r: number) => {
+    if (!me || !sel.color) return;
+    const line = me.lines[r];
+    const glaze = colorName(sel.color);
+    if (line.count >= r + 1) return notify(`Row ${r + 1} is full until the end of the round.`);
+    if (line.color && line.color !== sel.color) return notify(`Row ${r + 1} already holds ${colorName(line.color)}: each row takes one glaze only.`);
+    return notify(`Your wall already has ${glaze} in row ${r + 1}, so that row can't take more.`);
+  };
 
   // Escape puts the tiles back.
   useEffect(() => {
@@ -250,6 +259,7 @@ export function Game({ room, game, you, act, send, leave }: {
                 color={myTurn ? sel.color : null}
                 validRows={validRows}
                 onRow={myTurn ? (r) => place(r) : undefined}
+                onBlocked={myTurn ? explainRow : undefined}
                 onFloor={myTurn ? () => place('floor') : undefined}
                 fresh={fresh.get(me.id)}
                 flyPrefix={me.id}

@@ -88,13 +88,15 @@ function FloorPiece({ item }: { item: FloorItem }) {
 /**
  * A potter's board: work rows (stepped, filling towards the wall) beside the wall,
  * and the floor line of broken tiles beneath. With `onRow`/`onFloor`, the rows
- * that can take `color` light up and can be tapped.
+ * that can take `color` light up and can be tapped; tapping one that can't calls
+ * `onBlocked`, so the player can be told why.
  */
-export function PlayerBoard({ player, color, validRows, onRow, onFloor, fresh, flyPrefix, compact }: {
+export function PlayerBoard({ player, color, validRows, onRow, onBlocked, onFloor, fresh, flyPrefix, compact }: {
   player: PlayerState;
   color?: Color | null;
   validRows?: number[];
   onRow?: (r: number) => void;
+  onBlocked?: (r: number) => void;
   onFloor?: () => void;
   /** Wall cells set this round, to make them glow. */
   fresh?: Set<string>;
@@ -111,14 +113,15 @@ export function PlayerBoard({ player, color, validRows, onRow, onFloor, fresh, f
         <div className="lines">
           {player.lines.map((line, r) => {
             const valid = choosing && validRows!.includes(r);
-            const Tag = valid ? 'button' : 'div';
+            const blocked = choosing && !valid;
+            const Tag = valid || (blocked && onBlocked) ? 'button' : 'div';
             return (
               <Tag
                 key={r}
-                type={valid ? 'button' : undefined}
-                className={cx('line', valid && 'valid', choosing && !valid && 'blocked')}
-                onClick={valid ? () => onRow!(r) : undefined}
-                aria-label={valid ? `Row ${r + 1}` : undefined}
+                type={Tag === 'button' ? 'button' : undefined}
+                className={cx('line', valid && 'valid', blocked && 'blocked')}
+                onClick={valid ? () => onRow!(r) : blocked && onBlocked ? () => onBlocked(r) : undefined}
+                aria-label={valid ? `Row ${r + 1}` : blocked ? `Row ${r + 1} (can't take these)` : undefined}
                 data-fly={flyPrefix && `${flyPrefix}-line-${r}`}
               >
                 {Array.from({ length: r + 1 }, (_, i) => {

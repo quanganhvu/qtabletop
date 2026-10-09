@@ -18,10 +18,10 @@
   --shadow: 70 50 25;
 
   /* Glazes (--glaze), their deepest shade (--glaze-deep), and the brush color of their motif (--brush). */
-  --indigo: #2c4f8f; --indigo-deep: #182c58;
+  --indigo: #2f62b8; --indigo-deep: #1a3570;
   --ochre: #dda43c; --ochre-deep: #a5711b;
   --vermilion: #d34a2f; --vermilion-deep: #982915;
-  --ink-glaze: #36353c; --ink-glaze-deep: #18171b;
+  --ink-glaze: #262428; --ink-glaze-deep: #0c0b0d;
   --celadon: #9fcbb6; --celadon-deep: #66a08a;
 
   --display: 'Shippori Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
@@ -280,7 +280,7 @@ input:focus { outline: 2px solid rgb(194 59 34 / 0.35); outline-offset: 1px; bor
 .line.valid { cursor: pointer; box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--accent); animation: row-glow 1s ease-in-out infinite alternate; }
 .line.valid .slot { background: #fbe1d6; box-shadow: inset 0 1px 3px rgb(194 59 34 / 0.3); }
 .line.valid:hover { transform: translateX(-2px); }
-.line.blocked { opacity: 0.35; }
+.line.blocked { opacity: 0.35; cursor: help; }
 @keyframes row-glow { from { box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px rgb(194 59 34 / 0.45); } }
 
 .wall {
