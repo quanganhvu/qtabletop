@@ -23,23 +23,23 @@ const session = () => sessionStorage;
 const local = () => localStorage;
 
 export function getPlayerId(): string {
-  let id = read(session, 'skyline.playerId');
+  let id = read(session, 'trescomas.playerId');
   if (!id) {
     id = Array.from({ length: 16 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
-    write(session, 'skyline.playerId', id);
+    write(session, 'trescomas.playerId', id);
   }
   return id;
 }
 
-export const setPlayerId = (id: string) => write(session, 'skyline.playerId', id);
+export const setPlayerId = (id: string) => write(session, 'trescomas.playerId', id);
 
 /** Whether you prefer the board flat instead of in 3D. */
-export const getFlatBoard = () => read(local, 'skyline.flat') === '1';
-export const setFlatBoard = (flat: boolean) => write(local, 'skyline.flat', flat ? '1' : null);
-export const getName = () => read(local, 'skyline.name') ?? '';
-export const setName = (name: string) => write(local, 'skyline.name', name);
-export const getRoomCode = () => read(session, 'skyline.room');
-export const setRoomCode = (code: string | null) => write(session, 'skyline.room', code);
+export const getFlatBoard = () => read(local, 'trescomas.flat') === '1';
+export const setFlatBoard = (flat: boolean) => write(local, 'trescomas.flat', flat ? '1' : null);
+export const getName = () => read(local, 'trescomas.name') ?? '';
+export const setName = (name: string) => write(local, 'trescomas.name', name);
+export const getRoomCode = () => read(session, 'trescomas.room');
+export const setRoomCode = (code: string | null) => write(session, 'trescomas.room', code);
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 export function randomRoomCode(): string {

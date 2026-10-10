@@ -40,22 +40,22 @@ interface Site {
   j: number;
 }
 
-/** Each chain's architecture as a stack of levels: low motels, row houses, wedding cakes, pueblos... */
+/** Each startup's headquarters as a stack of levels: low co-working sheds, brick lofts, stepped campuses, towers... */
 const PROFILES: Record<Chain, (s: Site) => { levels: Level[]; gable?: boolean }> = {
-  // Neon motel: one low, sprawling storey.
+  // Neon co-working space: one low, sprawling storey.
   astra: ({ base, j }) => ({ levels: [{ h: 8 + 0.18 * base + 1.5 * j, set: all(2) }] }),
-  // Red-brick inn: row houses with pitched roofs; the main house is flat, for the water tower.
+  // Brick-loft offices: converted warehouses with pitched roofs; the main one is flat, for the water tower.
   bayside: ({ base, d, core, j }) => ({
     levels: [{ h: 6 + 0.45 * base * Math.max(0.6, 1 - 0.1 * d) + 2 * j + (core ? 6 : 0), set: all(2) }],
     gable: !core,
   }),
-  // Miami deco: a wedding cake, stepping in as it rises.
+  // Pastel campus: a wedding cake, stepping in as it rises.
   coral: ({ base, d, core, j }) => {
     const h = base * (core ? 1.2 : Math.max(0.5, 1 - 0.13 * d) + 0.06 * j);
     const split = h > 38 ? [0.5, 0.3, 0.2] : h > 22 ? [0.62, 0.38] : [1];
     return { levels: split.map((f, k) => ({ h: h * f, set: all([2, 12, 22][k]) })) };
   },
-  // Adobe pueblo: terraces stepping back towards the north-west, highest in the middle.
+  // Terraced campus: terraces stepping back towards the north-west, highest in the middle.
   dorado: ({ size, d, maxD, core, j }) => {
     const most = size < 5 ? 1 : size < 12 ? 2 : size < 25 ? 3 : 4;
     const n = core ? most : Math.max(1, Math.round(most * (1 - d / (maxD + 1))));
@@ -66,7 +66,7 @@ const PROFILES: Record<Chain, (s: Site) => { levels: Level[]; gable?: boolean }>
       })),
     };
   },
-  // Beaux-arts stone: a wide podium, wings by the tower, and one stepped tower in the middle.
+  // Old-money stone HQ: a wide podium, wings by the tower, and one stepped tower in the middle.
   empire: ({ size, base, d, core }) => {
     const podium = { h: 10 + 0.12 * base, set: all(2) };
     if (core) {
@@ -168,6 +168,34 @@ export function Board({ board, myTiles, placing, lastTile, hoverTile, merging, f
   const suppressClick = useRef(false);
   const shapes = buildings(board);
 
+  // Shrink the board just enough that, however it's turned and tilted, its whole
+  // table stays inside the stage instead of running off the edges.
+  const stageRef = useRef<HTMLDivElement>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ sw: 0, sh: 0, bw: 0, bh: 0 });
+  useEffect(() => {
+    const stage = stageRef.current;
+    const el = boardRef.current;
+    if (!stage || !el) return;
+    const measure = () => setBox({ sw: stage.clientWidth, sh: stage.clientHeight, bw: el.offsetWidth, bh: el.offsetHeight });
+    const observer = new ResizeObserver(measure);
+    observer.observe(stage);
+    observer.observe(el);
+    measure();
+    return () => observer.disconnect();
+  }, []);
+  const fit = (() => {
+    if (flat || !box.bw) return 1;
+    const yaw = (view.yaw * Math.PI) / 180;
+    const tilt = (view.tilt * Math.PI) / 180;
+    const c = Math.abs(Math.cos(yaw));
+    const sn = Math.abs(Math.sin(yaw));
+    // The turned table's footprint, then squashed by the tilt; perspective makes the near edge a little wider.
+    const w = (box.bw * c + box.bh * sn) * (1 + 0.18 * Math.sin(tilt));
+    const h = (box.bw * sn + box.bh * c) * Math.cos(tilt) + 60 * Math.sin(tilt);
+    return Math.min(1, (0.96 * box.sw) / w, (0.96 * box.sh) / h);
+  })();
+
   // When a chain is taken over, its squares are rebuilt in the survivor's style, in a wave from the merger tile.
   const prevBoard = useRef(board);
   const [takeover, setTakeover] = useState(NO_TAKEOVER);
@@ -220,11 +248,12 @@ export function Board({ board, myTiles, placing, lastTile, hoverTile, merging, f
   };
   const turn = (deg: number) => setView({ ...view, yaw: Math.round((view.yaw + deg) / 90) * 90 });
 
-  const stageStyle = { '--yaw': `${flat ? 0 : view.yaw}deg`, '--tilt': `${flat ? 0 : view.tilt}deg` } as CSSProperties;
+  const stageStyle = { '--yaw': `${flat ? 0 : view.yaw}deg`, '--tilt': `${flat ? 0 : view.tilt}deg`, '--fit': fit.toFixed(3) } as CSSProperties;
 
   return (
     <>
       <div
+        ref={stageRef}
         className={cx('board-stage', flat && 'flat', dragging && 'dragging')}
         style={stageStyle}
         onPointerDown={onPointerDown}
@@ -238,7 +267,7 @@ export function Board({ board, myTiles, placing, lastTile, hoverTile, merging, f
           }
         }}
       >
-        <div className="board" role="grid" aria-label="Board">
+        <div className="board" ref={boardRef} role="grid" aria-label="Board">
           <span className="edge n" /><span className="edge s" /><span className="edge e" /><span className="edge w" />
           {/* Coordinates on every side, so the near edge always has them whichever way the board is turned. */}
           {(['n', 's'] as const).map((side) => (
@@ -275,7 +304,7 @@ export function Board({ board, myTiles, placing, lastTile, hoverTile, merging, f
                 onClick={() => onPlace(t)}
                 onMouseEnter={() => mine && onHover(t)}
                 onMouseLeave={() => onHover(null)}
-                aria-label={`${label}${cell ? `, ${chain ? chainName(chain) : 'hotel'}` : mine ? ', your tile' : ''}`}
+                aria-label={`${label}${cell ? `, ${chain ? chainName(chain) : 'office'}` : mine ? ', your tile' : ''}`}
               >
                 <span className="slot" aria-hidden="true"><span className="upright">{label}</span></span>
                 {cell && (

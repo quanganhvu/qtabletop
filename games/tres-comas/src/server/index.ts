@@ -1,6 +1,6 @@
 import { Server, routePartykitRequest, type Connection, type WSMessage } from 'partyserver';
 import { chooseLeveledAction, isBotLevel, type BotLevel } from '../shared/botLevels';
-import { BOT_NAMES } from '../shared/theme';
+import { BOT_NAMES, SPARE_BOT_NAMES } from '../shared/theme';
 import { actorIndex, applyAction, createGame, RuleError, viewFor, type GameState } from '../shared/game';
 import { MAX_NAME_LENGTH, MAX_PLAYERS, type ClientMessage, type RoomInfo, type ServerMessage } from '../shared/protocol';
 
@@ -160,8 +160,8 @@ export class AcquireRoom extends Server<Env> {
         this.requireHost(conn);
         if (d.game) throw new RuleError('The game has already started');
         if (d.players.length >= MAX_PLAYERS) throw new RuleError('Room is full');
-        const name = BOT_NAMES.find((n) => !d.players.some((p) => p.name === n)) ?? 'Bot';
         const level = isBotLevel(msg.level) ? msg.level : 'normal';
+        const name = [...BOT_NAMES[level], ...SPARE_BOT_NAMES].find((n) => !d.players.some((p) => p.name === n)) ?? 'Bot';
         d.players.push({ id: `bot-${crypto.randomUUID()}`, name, bot: true, level });
         break;
       }

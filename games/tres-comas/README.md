@@ -1,6 +1,6 @@
-# Skyline
+# Tres Comas
 
-A take on the classic hotel-chain game *Acquire*, for 2–6 friends.
+A Silicon Valley take on the classic company-merger game *Acquire*, for 2–6 friends: found startups like Pied Piper and Hooli, grow them across the Valley, and cash in when they get acquired. Named after Russ Hanneman's tequila.
 
 **Stack:** TypeScript · React 19 + Vite 8 · Cloudflare Workers + Durable Objects (via `partyserver`) · Vitest
 
@@ -24,7 +24,7 @@ npm run typecheck
 
 ```sh
 npx wrangler login   # one time
-npm run deploy       # → https://skyline.<your-subdomain>.workers.dev
+npm run deploy       # → https://tres-comas.<your-subdomain>.workers.dev
 ```
 
 ## How it works

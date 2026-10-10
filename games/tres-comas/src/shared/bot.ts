@@ -1,4 +1,4 @@
-// Skyline bot. It only looks at public information plus its own tiles (never the bag or
+// Tres Comas bot. It only looks at public information plus its own tiles (never the bag or
 // other hands), and always returns a legal action for the current phase.
 //
 // It plays by looking one step ahead: each playable tile is tried on a copy of the game and

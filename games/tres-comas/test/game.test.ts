@@ -131,13 +131,13 @@ describe('placing tiles', () => {
     CHAINS.forEach((c, i) => Object.assign(board, run(`${(i % 4) * 3 + 1}${i < 4 ? 'A' : 'C'}`, 2, c)));
     const g = setup(['2I', '12I'], board);
     expect(tileStatus(g.board, T('2I'))).toBe('blocked');
-    expect(() => applyAction(g, 'a', { type: 'place', tile: T('2I') })).toThrow(/seven chains/);
+    expect(() => applyAction(g, 'a', { type: 'place', tile: T('2I') })).toThrow(/seven startups/);
   });
 
   it('a tile joining two safe chains is dead and gets replaced', () => {
     const g = setup(['11B', '5E'], { ...run('1A', 11, 'astra'), ...run('1C', 11, 'bayside') });
     expect(tileStatus(g.board, T('11B'))).toBe('dead');
-    expect(() => applyAction(g, 'a', { type: 'place', tile: T('11B') })).toThrow(/two safe/);
+    expect(() => applyAction(g, 'a', { type: 'place', tile: T('11B') })).toThrow(/too big to buy/);
     applyAction(g, 'a', { type: 'place', tile: T('5E') });
     applyAction(g, 'a', { type: 'buy', shares: {} });
     expect(g.players[0].tiles).not.toContain(T('11B'));

@@ -23,16 +23,16 @@ export function RuleBook({ onClose }: { onClose: () => void }) {
         <h3>Your turn</h3>
         <ol>
           <li><strong>Play a tile</strong> on its matching square.</li>
-          <li><strong>Buy up to {MAX_BUY} shares</strong> in any chains on the board.</li>
+          <li><strong>Buy up to {MAX_BUY} shares</strong> in any startups on the board.</li>
           <li>You draw back up to {HAND_SIZE} tiles automatically.</li>
         </ol>
 
         <h3>What a tile does</h3>
         <ul>
           <li><strong>Next to nothing:</strong> it just sits there.</li>
-          <li><strong>Next to loose hotels only:</strong> you <em>found</em> a new chain, pick which one, and get a free share. There are 7 chains; you can't found an 8th.</li>
-          <li><strong>Next to one chain:</strong> the chain grows, along with any loose hotels touching it.</li>
-          <li><strong>Between two or more chains:</strong> a <em>merger</em>. The biggest chain survives (you pick if they're tied). Chains of {SAFE_SIZE}+ tiles are <em>safe</em> and can't be taken over, so a tile joining two safe chains is dead and is replaced.</li>
+          <li><strong>Next to lone offices only:</strong> you <em>found</em> a startup, pick which one, and get a free founder's share. There are 7 startups; you can't found an 8th.</li>
+          <li><strong>Next to one startup:</strong> it grows, along with any lone offices touching it.</li>
+          <li><strong>Between two or more startups:</strong> an <em>acquisition</em>. The biggest one buys out the others (you pick if they're tied). Startups of {SAFE_SIZE}+ tiles are <em>too big to buy</em> and can't be taken over, so a tile joining two of them is dead and is replaced.</li>
         </ul>
 
         <h3>Mergers</h3>
@@ -40,7 +40,7 @@ export function RuleBook({ onClose }: { onClose: () => void }) {
           For each chain that's taken over, the biggest shareholder gets the majority bonus (10× the share price) and the
           runner-up gets the minority bonus (5×). A sole holder gets both; ties split them. Then, starting with the player who
           merged, each holder chooses what to do with their shares: <strong>sell</strong> at the current price,
-          <strong> trade</strong> 2 for 1 into the surviving chain, or <strong>keep</strong> them in case it's founded again.
+          <strong> trade</strong> 2 for 1 into the buyer, or <strong>keep</strong> them in case it's founded again.
         </p>
 
         <h3>Share prices</h3>

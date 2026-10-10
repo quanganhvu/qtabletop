@@ -1,4 +1,4 @@
-/* Skyline: art-deco hotel lobby at night. Navy lacquer, brass trim, ivory tiles. */
+/* Tres Comas: a tech city at night. Navy glass, neon trim, ivory tiles. */
 :root {
   --bg: #0b1020;
   --panel: rgb(18 25 46 / 0.9);
@@ -129,14 +129,14 @@ input:focus { outline: 1px solid var(--accent); outline-offset: 1px; border-colo
 .board-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
 
 /* ---- 3D board ----
-   The board is a brass-trimmed table you can orbit (--yaw, --tilt). Every hotel is a box: a roof
+   The board is a brass-trimmed table you can orbit (--yaw, --tilt). Every office is a box: a roof
    plus four walls, raised by --h. Chains become buildings whose height animates as they grow.
    Walls ignore the pointer so tall towers never steal clicks. */
 @property --h { syntax: '<length>'; inherits: true; initial-value: 0px; }
 @property --z { syntax: '<length>'; inherits: false; initial-value: 0px; }
 
 .board-stage {
-  --stage-h: calc(100dvh - var(--dock-h) - var(--topbar-h) - 64px);
+  --stage-h: calc(100dvh - var(--dock-h) - var(--topbar-h) - 30px - 64px);
   width: 100%; height: max(340px, var(--stage-h)); display: grid; place-items: center;
   perspective: 1700px; perspective-origin: 50% 20%;
   cursor: grab; touch-action: pan-y; user-select: none;
@@ -147,7 +147,7 @@ input:focus { outline: 1px solid var(--accent); outline-offset: 1px; border-colo
   position: relative; display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; padding: 12px;
   width: min(88%, calc(max(340px, var(--stage-h)) * 1.12));
   transform-style: preserve-3d;
-  transform: rotateX(var(--tilt)) rotateZ(var(--yaw));
+  transform: scale(var(--fit, 1)) rotateX(var(--tilt)) rotateZ(var(--yaw));
   transition: transform 0.6s cubic-bezier(.2, .8, .2, 1);
   background:
     radial-gradient(ellipse at 50% 30%, rgb(70 96 160 / 0.25), transparent 70%),
@@ -188,7 +188,7 @@ input:focus { outline: 1px solid var(--accent); outline-offset: 1px; border-colo
 }
 .cell.loose .slot, .cell.chained .slot, .cell.in-hand .slot { color: transparent; }
 
-/* A hotel is a stack of levels (.block), each lifted by --z and --h tall; --top paints roofs,
+/* An office is a stack of levels (.block), each lifted by --z and --h tall; --top paints roofs,
    --side and --side-dark the walls. New levels rise out of the one below. */
 .building { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
 .block {
@@ -254,7 +254,7 @@ input:focus { outline: 1px solid var(--accent); outline-offset: 1px; border-colo
 .chained .face.left, .chained .face.right { --floor-axis: 90deg; --bay-axis: 180deg; }
 .swatch { --wall: color-mix(in srgb, var(--chain) 78%, #000); }
 
-/* Astra, neon motel: white balcony rails and lit doors; a pool on each roof, a glowing sign on top. */
+/* SeeFood (astra), hacker-hostel garage: white balcony rails and lit doors; a pool on each roof, a glowing sign on top. */
 :is(.look-astra .face:not(.top), .swatch.look-astra) {
   background-image:
     repeating-linear-gradient(var(--floor-axis), rgb(255 255 255 / 0.85) 0 1px, transparent 1px 7px),
@@ -603,3 +603,281 @@ input:focus { outline: 1px solid var(--accent); outline-offset: 1px; border-colo
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Each startup's logo in the table: a solid chip in its color with its initial. */
+.logo { display: inline-grid; place-items: center; flex-shrink: 0; width: 20px; height: 20px; border-radius: 5px;
+  background: var(--chain); font: 800 0.72rem var(--display); line-height: 1;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.35), 0 0 8px color-mix(in srgb, var(--chain) 55%, transparent); }
+.tier { margin-left: 26px; }
+
+/* The bottom panel: your tiles and the prompt, centred together. */
+.dock { justify-content: center; }
+.dock > * { flex: 0 1 auto; }
+
+/* ---- Acquisitions: a mid-screen dialog that plays the chain of effects ---- */
+.acq-overlay {
+  position: fixed; inset: 0 0 var(--dock-h) 0; z-index: 40; display: grid; place-items: center; padding: 16px; pointer-events: none;
+  background: radial-gradient(ellipse at center, rgb(5 8 20 / 0.72), rgb(5 8 20 / 0.35) 70%); animation: acq-fade 0.3s ease-out both;
+}
+.acq-card {
+  position: relative; pointer-events: auto; width: min(560px, 100%); max-height: 100%; overflow-y: auto;
+  display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 20px 24px 22px; text-align: center;
+  background: linear-gradient(180deg, rgb(24 33 62 / 0.98), rgb(11 16 32 / 0.98)); border: 1px solid var(--accent); border-radius: 14px;
+  box-shadow: 0 0 0 4px rgb(11 16 32 / 0.85), 0 0 0 5px rgb(214 178 94 / 0.45), 0 0 60px rgb(214 178 94 / 0.25), 0 30px 80px rgb(0 0 0 / 0.6);
+  animation: acq-in 0.5s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+.acq-close { position: absolute; top: 8px; right: 8px; }
+.acq-kicker { font: 800 0.8rem var(--display); letter-spacing: 0.5em; text-transform: uppercase; color: var(--accent-bright); }
+.acq-kicker::before, .acq-kicker::after { content: "◆"; margin: 0 0.8em; font-size: 0.6em; vertical-align: middle; opacity: 0.7; }
+
+.acq-stage { position: relative; display: flex; align-items: center; justify-content: center; gap: 18px; width: 100%; min-height: 128px; }
+.acq-co { position: relative; overflow: hidden; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 130px; padding: 12px 14px; border-radius: 12px;
+  background: color-mix(in srgb, var(--chain) 16%, #0e1530); border: 2px solid var(--chain); box-shadow: 0 0 24px color-mix(in srgb, var(--chain) 40%, transparent); }
+.acq-co b { font: 800 1.1rem var(--display); letter-spacing: 0.04em; }
+.acq-co small { color: var(--muted); font-size: 0.78rem; }
+.acq-logo { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: var(--chain); font: 800 1.5rem var(--display);
+  box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.35), 0 4px 12px rgb(0 0 0 / 0.4); }
+/* The acquired startup slides into its buyer and is swallowed. */
+.acq-co.acquired { animation: acq-swallowed 1.3s cubic-bezier(.6, 0, .4, 1) 0.7s both; }
+.acq-arrow { font-size: 1.6rem; color: var(--accent-bright); animation: acq-arrow 1.3s ease-in 0.7s both; }
+.acq-co.buyer { animation: acq-gulp 0.6s cubic-bezier(.2, 1.6, .4, 1) 1.9s both; }
+.acq-grow { display: inline-block; color: var(--text); font-weight: 700; animation: acq-pop 0.5s ease-out 2s both; }
+.acq-burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.acq-burst i { position: absolute; width: 8px; height: 8px; margin: -4px; border-radius: 2px; background: var(--chain);
+  transform: rotate(var(--a)) translateY(0); opacity: 0; animation: acq-spark 0.9s ease-out 1.9s both; }
+.acq-headline { font: 800 clamp(1.2rem, 3.4vw, 1.6rem) var(--display); letter-spacing: 0.03em; margin: 0; animation: acq-rise 0.5s ease-out 2.1s both; }
+
+.acq-step { width: 100%; display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); text-align: left; }
+.acq-step.s2 { animation: acq-rise 0.5s ease-out 2.7s both; }
+.acq-step.s3 { animation: acq-rise 0.5s ease-out 4.1s both; }
+.acq-step-title { display: flex; align-items: center; gap: 8px; font: 700 0.72rem var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); }
+.acq-n { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #1d1708; font-size: 0.7rem; }
+.acq-payouts, .acq-decisions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.acq-payouts li { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px;
+  background: rgb(214 178 94 / 0.08); border: 1px solid rgb(214 178 94 / 0.3); animation: acq-rise 0.45s ease-out calc(3s + var(--i) * 0.35s) both; }
+.acq-who { font-weight: 700; }
+.acq-kind { font-size: 0.78rem; color: var(--muted); }
+.acq-amount { font: 800 1.15rem var(--display); color: var(--accent-bright); animation: acq-pop 0.5s ease-out calc(3.2s + var(--i) * 0.35s) both; }
+.acq-coins { position: absolute; right: 18px; top: 50%; pointer-events: none; }
+.acq-coins i { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff3c4, #e0b44a 60%, #a8781f);
+  opacity: 0; animation: acq-coin 0.9s ease-out calc(3.2s + var(--i) * 0.35s) both; }
+.acq-coins i:nth-child(2) { animation-delay: calc(3.32s + var(--i) * 0.35s); left: -10px; }
+.acq-coins i:nth-child(3) { animation-delay: calc(3.44s + var(--i) * 0.35s); left: 8px; }
+.acq-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.acq-options span { padding: 4px 10px; border-radius: 999px; background: rgb(255 255 255 / 0.05); border: 1px solid var(--line); font-size: 0.82rem; }
+.acq-decision { padding: 6px 10px; border-left: 3px solid var(--accent); background: rgb(255 255 255 / 0.04); font-size: 0.88rem; animation: acq-rise 0.35s ease-out both; }
+.acq-decision b { margin-right: 6px; }
+.acq-decision.waiting { border-left-color: var(--muted); color: var(--muted); }
+.acq-decision.waiting::after { content: ''; display: inline-block; width: 6px; height: 6px; margin-left: 8px; border-radius: 50%; background: var(--accent); animation: acq-blink 0.9s ease-in-out infinite; }
+.acq-decision.done { border-left-color: #6fcf8f; color: #9fe0b3; }
+
+@keyframes acq-fade { from { opacity: 0; } }
+@keyframes acq-in { from { opacity: 0; transform: scale(0.85) translateY(20px); } }
+@keyframes acq-swallowed {
+  0% { transform: none; opacity: 1; max-width: 220px; }
+  60% { transform: translateX(calc(100% + 30px)) scale(0.7); opacity: 0.9; max-width: 220px; }
+  100% { transform: translateX(60px) scale(0.15); opacity: 0; max-width: 0; min-width: 0; padding: 0; border-width: 0; margin-right: -18px; }
+}
+@keyframes acq-arrow { 0% { opacity: 1; } 50% { opacity: 1; transform: translateX(10px); } 100% { opacity: 0; transform: translateX(20px); font-size: 0; margin-right: -18px; } }
+@keyframes acq-gulp { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1.06); } }
+@keyframes acq-pop { 0% { opacity: 0; transform: scale(1.8); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes acq-spark { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-90px); } }
+@keyframes acq-rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes acq-coin { 0% { opacity: 0; transform: translateY(14px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40px); } }
+@keyframes acq-blink { 50% { opacity: 0.2; } }
+@media (max-width: 700px) {
+  .acq-card { padding: 16px 14px; gap: 10px; }
+  .acq-co { min-width: 104px; padding: 10px; }
+  .acq-logo { width: 38px; height: 38px; font-size: 1.2rem; }
+}
+
+/* The board stays in its own area: when turned, its corners and towers never cover the side panel. */
+.board-wrap { overflow-x: clip; }
+.side { position: relative; z-index: 2; }
+
+/* The side column scrolls on its own when there are many players, instead of running under the bottom panel. */
+@media (min-width: 900px) {
+  .side { max-height: calc(100dvh - var(--dock-h) - var(--topbar-h) - 30px - 32px); overflow-y: auto; scrollbar-width: thin; }
+}
+
+/* ---- The startup exchange: a stock-market board ---- */
+.tape { position: sticky; top: var(--topbar-h); z-index: 9; overflow: hidden; height: 30px; display: flex; align-items: center;
+  background: #05070f; border-top: 1px solid rgb(214 178 94 / 0.25); border-bottom: 1px solid rgb(214 178 94 / 0.25);
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
+.tape-track { display: flex; width: max-content; animation: tape 38s linear infinite; }
+.tape:hover .tape-track { animation-play-state: paused; }
+.tape-run { display: flex; }
+.tape-item { display: inline-flex; align-items: center; gap: 8px; padding: 0 22px; font: 600 0.82rem ui-monospace, 'SF Mono', Consolas, monospace; white-space: nowrap; border-right: 1px solid rgb(255 255 255 / 0.08); }
+.tape-sym { color: var(--chain); letter-spacing: 0.06em; }
+.tape-price { color: #e8eefc; }
+.tape-off { color: var(--muted); font-weight: 400; }
+.tape-item.unlisted .tape-sym { opacity: 0.45; }
+@keyframes tape { to { transform: translateX(-50%); } }
+
+.market-head { display: flex; justify-content: space-between; align-items: center; padding: 0 2px 8px; }
+.market-title { font: 700 0.7rem var(--display); letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent-bright); }
+.market-live { display: inline-flex; align-items: center; gap: 6px; font: 700 0.62rem var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: #6fe39a; }
+.market-live i { width: 7px; height: 7px; border-radius: 50%; background: #6fe39a; box-shadow: 0 0 8px #6fe39a; animation: live 1.4s ease-in-out infinite; }
+@keyframes live { 50% { opacity: 0.3; } }
+.market { font-variant-numeric: tabular-nums; }
+.market td.num, .market th.num { text-align: right; }
+.market .sym { font: 800 0.9rem ui-monospace, 'SF Mono', Consolas, monospace; letter-spacing: 0.04em; }
+.price-cell { white-space: nowrap; }
+.price-cell .px { display: block; font: 800 1rem ui-monospace, 'SF Mono', Consolas, monospace; }
+.price-cell .bank { display: block; font-size: 0.66rem; color: var(--muted); }
+.px.flash { animation: px-flash 1.2s ease-out; border-radius: 3px; }
+@keyframes px-flash { 0% { background: rgb(255 255 255 / 0.3); } 100% { background: transparent; } }
+.chg { display: inline-block; font: 700 0.7rem ui-monospace, 'SF Mono', Consolas, monospace; padding: 1px 5px; border-radius: 3px; }
+.chg.up { color: #6fe39a; background: rgb(111 227 154 / 0.12); }
+.chg.down { color: #ff7b8a; background: rgb(255 123 138 / 0.12); }
+.chg.ipo { color: #1d1708; background: var(--accent); }
+.chg.flat { color: var(--muted); }
+.chg.ipo-pending { color: var(--muted); padding-right: 0; }
+.chart-col { width: 70px; text-align: center; }
+.spark { display: block; margin: 0 auto; overflow: visible; }
+.spark-line { fill: none; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.spark-fill { opacity: 0.18; }
+.spark.up .spark-line, .spark.up .spark-dot { stroke: #6fe39a; fill: none; }
+.spark.up .spark-dot { fill: #6fe39a; }
+.spark.up .spark-fill { fill: #6fe39a; }
+.spark.down .spark-line { stroke: #ff7b8a; }
+.spark.down .spark-dot, .spark.down .spark-fill { fill: #ff7b8a; }
+.spark-flat { stroke: var(--muted); stroke-dasharray: 2 3; }
+.market tr.inactive .logo { filter: grayscale(0.7); opacity: 0.6; }
+
+/* ---- Acquisition dressing: the market goes wild behind the deal ---- */
+.acq-scenery { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.acq-candles { position: absolute; left: 4%; top: 12%; width: 92%; height: 76%; opacity: 0.38; }
+.acq-candles .grid { stroke: rgb(214 178 94 / 0.18); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.acq-candles g { opacity: 0; animation: candle-in 0.25s ease-out calc(0.15s + var(--i) * 0.06s) both; }
+.acq-candles line { stroke-width: 1; vector-effect: non-scaling-stroke; }
+.acq-candles .up line { stroke: #4ee08a; }
+.acq-candles .up rect { fill: #4ee08a; }
+.acq-candles .down line { stroke: #ff6b7d; }
+.acq-candles .down rect { fill: #ff6b7d; }
+.acq-candles .trend { fill: none; stroke: #f2c14e; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-dasharray: 400; stroke-dashoffset: 400; animation: trend-draw 2.2s ease-out 0.3s forwards; filter: drop-shadow(0 0 4px #f2c14e); }
+@keyframes candle-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes trend-draw { to { stroke-dashoffset: 0; } }
+
+.acq-news { position: absolute; left: 0; right: 0; height: 30px; display: flex; align-items: center; overflow: hidden; white-space: nowrap;
+  font: 800 0.8rem ui-monospace, 'SF Mono', Consolas, monospace; letter-spacing: 0.08em; animation: news-in 0.4s ease-out both; }
+.acq-news.top { top: 0; background: #b3122a; color: #fff; box-shadow: 0 4px 18px rgb(179 18 42 / 0.5); }
+.acq-news.bottom { bottom: 0; background: #f2c14e; color: #1d1708; animation-delay: 0.2s; }
+.acq-news-track { display: flex; width: max-content; animation: tape 16s linear infinite; }
+.acq-news.bottom .acq-news-track { animation-duration: 20s; animation-direction: reverse; }
+@keyframes news-in { from { transform: scaleY(0); } }
+
+.acq-bills { position: absolute; inset: 0; }
+.acq-bills i { position: absolute; top: -40px; left: var(--x); width: 38px; height: 18px; display: grid; place-items: center; border-radius: 2px;
+  font: 800 0.7rem var(--display); font-style: normal; color: #0f3d27;
+  background: linear-gradient(90deg, #9fdcb3, #d8f2df 50%, #9fdcb3); box-shadow: inset 0 0 0 1.5px #3c8a5c, 0 2px 4px rgb(0 0 0 / 0.4);
+  animation: bill-fall var(--t) linear var(--d) infinite; opacity: 0.85; }
+@keyframes bill-fall {
+  0% { transform: translateY(0) rotate(var(--r)) rotateY(0deg); }
+  100% { transform: translateY(110vh) rotate(calc(var(--r) * -1)) rotateY(720deg); }
+}
+
+/* The card itself: a share certificate, double gold rules and a guilloche pattern. */
+.acq-card.certificate {
+  overflow: visible;
+  background:
+    repeating-radial-gradient(circle at 50% 0%, rgb(214 178 94 / 0.05) 0 2px, transparent 2px 7px),
+    linear-gradient(180deg, rgb(24 33 62 / 0.98), rgb(11 16 32 / 0.98));
+  border: 2px solid #d6b25e;
+  box-shadow:
+    0 0 0 5px #0b1020,
+    0 0 0 6px rgb(214 178 94 / 0.6),
+    0 0 0 12px rgb(11 16 32 / 0.92),
+    0 0 0 13px rgb(214 178 94 / 0.35),
+    0 0 70px rgb(214 178 94 / 0.3), 0 30px 90px rgb(0 0 0 / 0.7);
+}
+.acq-card.certificate::before {
+  content: ''; position: absolute; inset: 6px; border-radius: 9px; pointer-events: none;
+  border: 1px solid rgb(214 178 94 / 0.35);
+  background: repeating-conic-gradient(from 0deg at 50% 50%, transparent 0 3deg, rgb(214 178 94 / 0.035) 3deg 6deg);
+}
+.rosette { position: absolute; z-index: 2; width: 24px; height: 24px; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(#d6b25e 0 15deg, #8a6a24 15deg 30deg); box-shadow: 0 0 0 2px #0b1020, 0 0 0 3px #d6b25e; }
+.rosette::after { content: '$'; position: absolute; inset: 4px; border-radius: 50%; display: grid; place-items: center; background: #0b1020; color: #f2c14e; font: 800 0.62rem var(--display); }
+.rosette.tl { top: -12px; left: -12px; }
+.rosette.tr { top: -12px; right: -12px; }
+.rosette.bl { bottom: -12px; left: -12px; }
+.rosette.br { bottom: -12px; right: -12px; }
+.acq-card.certificate .acq-close { z-index: 3; }
+
+/* "Deal closed", stamped in red as the buyer swallows the startup. */
+.acq-stamp { position: absolute; z-index: 3; top: 96px; right: 7%; pointer-events: none;
+  padding: 6px 14px; border: 3px solid #e0344c; border-radius: 6px; color: #ff4d64;
+  font: 900 1.05rem var(--display); letter-spacing: 0.18em; text-transform: uppercase;
+  box-shadow: inset 0 0 0 2px rgb(224 52 76 / 0.35); background: rgb(224 52 76 / 0.1);
+  animation: stamp-slam 0.45s cubic-bezier(.3, 1.6, .5, 1) 1.95s both; }
+@keyframes stamp-slam { 0% { opacity: 0; transform: rotate(-14deg) scale(2.4); } 100% { opacity: 0.95; transform: rotate(-14deg) scale(1); } }
+@media (max-width: 700px) {
+  .acq-stamp { top: 74px; right: 4%; font-size: 0.78rem; }
+  .rosette { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .acq-bills { display: none; } }
+
+/* The Tres Comas bottle: on the start page and in the top bar. */
+.home-emblem { display: block; margin: 0 auto 4px; filter: drop-shadow(0 6px 18px rgb(242 193 78 / 0.3)); }
+.brand-emblem { display: block; flex-shrink: 0; }
+
+/* "Tres Comas" on one line. */
+.home h1 { font-size: clamp(1.9rem, 7vw, 2.5rem); letter-spacing: 0.12em; white-space: nowrap; }
+
+/* ---- Easter eggs: each startup's buildings hide a nod to the show ---- */
+
+/* SeeFood: the rooftop pools are hot dogs in buns. (Hot dog. Not hot dog.) */
+.look-astra .block > .face.top {
+  background:
+    radial-gradient(ellipse 15% 1.4% at 72% 77%, #ffe14a 0 70%, transparent 100%),
+    radial-gradient(ellipse 21% 5.5% at 72% 77%, #a8361f 0 62%, #7a2210 72%, transparent 78%),
+    radial-gradient(ellipse 24% 11% at 72% 78%, #f3c27a 0 66%, #c9893c 76%, #9c6224 82%, transparent 86%),
+    var(--top);
+}
+
+/* Bachmanity: the water tower is Erlich's palapa, thatched in straw. */
+.look-bayside .crown { --top: #d9b46a; --side: #8a5a2e; --side-dark: #5e3c1e; }
+.look-bayside .crown .face.top {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #8a6a30 0 12%, transparent 14%),
+    repeating-conic-gradient(#e8c87e 0 8deg, #b8893f 8deg 14deg);
+  box-shadow: 0 0 0 1px #6b4420;
+}
+.look-bayside .crown .face.top .upright { opacity: 0; }
+
+/* Aviato: the neon disc on the main tower is a little plane. */
+.look-coral .crown .face.top .upright { font-size: 0; }
+.look-coral .crown .face.top .upright::after { content: '✈'; font-size: clamp(0.6rem, 1.2vw, 0.9rem); }
+
+/* Raviga: Peter Gregory's sesame seeds, scattered over the terracotta roofs. */
+.look-dorado .block > .face.top {
+  background:
+    radial-gradient(ellipse 3.5% 2% at 22% 30%, #f6e7b8 0 80%, transparent 100%),
+    radial-gradient(ellipse 3.5% 2% at 64% 22%, #f6e7b8 0 80%, transparent 100%),
+    radial-gradient(ellipse 3.5% 2% at 42% 58%, #f6e7b8 0 80%, transparent 100%),
+    radial-gradient(ellipse 3.5% 2% at 78% 66%, #f6e7b8 0 80%, transparent 100%),
+    radial-gradient(ellipse 3.5% 2% at 30% 82%, #f6e7b8 0 80%, transparent 100%),
+    repeating-linear-gradient(0deg, transparent 0 5px, rgb(0 0 0 / 0.22) 5px 6px),
+    repeating-linear-gradient(90deg, #d0703f 0 3px, #9c4426 3px 4px);
+}
+
+/* Endframe: the knock-off. Its crown copies Pied Piper's helipad ring, a little crooked. */
+.look-empire .crown { inset: 12%; }
+.look-empire .crown .face.top {
+  border-radius: 50%;
+  background: radial-gradient(circle, #3e8a4f 0 50%, #ffd34a 53% 58%, #3e8a4f 61%);
+  transform: translateZ(var(--h)) rotate(7deg);
+}
+
+/* Hooli: the crown wears the Hooli rainbow. */
+.look-fontaine .crown .face.top {
+  background: conic-gradient(#4f8df5 0 25%, #e8453c 0 50%, #f9bb2d 0 75%, #3aa757 0);
+  box-shadow: inset 0 0 0 1px #fff;
+}
+.look-fontaine .crown .face.top .upright { color: #fff; text-shadow: 0 1px 2px rgb(0 0 0 / 0.6); }
+
+/* Pied Piper: the helipad reads 5.2, its record Weissman score. */
+.look-grand .crown .face.top .upright { font-size: 0; }
+.look-grand .crown .face.top .upright::after { content: '5.2'; font-size: clamp(0.5rem, 1vw, 0.75rem); letter-spacing: -0.02em; }

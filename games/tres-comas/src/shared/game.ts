@@ -1,4 +1,4 @@
-// Pure rules engine (Acquire-style hotel chains), shared by the server (authoritative) and the
+// Pure rules engine (Acquire-style companies), shared by the server (authoritative) and the
 // client (for hints like "can I play this tile?"). The server mutates a GameState only through
 // applyAction(); clients receive a filtered copy via viewFor().
 
@@ -17,12 +17,12 @@ export const END_SIZE = 41;
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 6;
 
-/** Price tier: budget chains are cheapest, luxury chains cost $200 more per share. */
+/** Price tier: seed-stage startups are cheapest, big tech costs $200 more per share. */
 export const TIER: Record<Chain, 0 | 1 | 2> = {
   astra: 0, bayside: 0, coral: 1, dorado: 1, empire: 1, fontaine: 2, grand: 2,
 };
 
-/** A board cell: empty, an unincorporated hotel tile, or part of a chain. */
+/** A board cell: empty, a lone office not yet part of a company, or part of one. */
 export type Cell = Chain | 'loose' | null;
 export type Shares = Record<Chain, number>;
 
@@ -293,8 +293,8 @@ function place(state: GameState, player: PlayerState, { tile }: { tile?: unknown
   const t = tile as number;
   if (!Number.isInteger(t) || !player.tiles.includes(t)) throw new RuleError("You don't have that tile");
   const status = tileStatus(state.board, t);
-  if (status === 'dead') throw new RuleError('That tile would merge two safe chains');
-  if (status === 'blocked') throw new RuleError('All seven chains are already on the board');
+  if (status === 'dead') throw new RuleError('That tile would merge two startups too big to buy');
+  if (status === 'blocked') throw new RuleError('All seven startups are already on the board');
 
   player.tiles = player.tiles.filter((x) => x !== t);
   state.board[t] = 'loose';
@@ -357,7 +357,7 @@ function startMerger(state: GameState, tile: number, survivor: Chain, chains: Ch
     .sort((a, b) => sizes[b] - sizes[a] || CHAINS.indexOf(a) - CHAINS.indexOf(b));
   state.merger = { tile, survivor, defuncts, decider: state.current };
   const player = state.players[state.current];
-  addLog(state, `${player.name} merged ${defuncts.map(chainName).join(' and ')} into ${chainName(survivor)}`);
+  addLog(state, `${chainName(survivor)} acquired ${defuncts.map(chainName).join(' and ')} (${player.name}'s tile)`);
   addEvent(state, { kind: 'merge', playerId: player.id, tile, survivor, defuncts: [...defuncts] });
   beginDefunct(state);
 }

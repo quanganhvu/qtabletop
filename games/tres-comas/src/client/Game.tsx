@@ -8,6 +8,7 @@ import { BOT_LEVEL_INFO } from '../shared/botLevels';
 import { CHAIN_INFO, GAME_NAME, PLAYER_COLORS, TIER_NAMES, chainName, money } from '../shared/theme';
 import { Board, type Merging } from './Board';
 import { MergeBanner } from './MergeBanner';
+import { Change, Sparkline, TickerTape, usePriceHistory, type History } from './market';
 import { chainStyle, cx } from './ui';
 import { getFlatBoard, setFlatBoard } from './identity';
 import { RuleBook } from './RuleBook';
@@ -26,6 +27,7 @@ export function Game({ room, game, you, act, send, leave }: {
   const actor = game.phase === 'over' ? -1 : actorIndex(game);
   const myMove = !!me && actor === meIndex;
   const isHost = room.hostId === you;
+  const history = usePriceHistory(game, room.code);
   const seat = (id: string) => room.players.find((p) => p.id === id);
   const sizes = chainSizes(game.board);
 
@@ -98,6 +100,7 @@ export function Game({ room, game, you, act, send, leave }: {
         {isHost && game.phase !== 'over' && <button className="btn ghost small" onClick={endGame}>End game</button>}
         <button className="btn ghost small" onClick={leaveGame}>Leave</button>
       </header>
+      <TickerTape game={game} history={history} />
 
       <div className="arena">
         <main className="board-wrap">
@@ -112,7 +115,7 @@ export function Game({ room, game, you, act, send, leave }: {
             onPlace={placeTile}
             onHover={setHoverTile}
           />
-          <MergeBanner game={game} />
+          <MergeBanner game={game} you={you} />
           <div className="board-foot muted small">
             {game.bagCount} tiles left in the bag
             {canDeclareEnd(game.board) && game.phase !== 'over' && <span className="pill warn">The game can now be declared over</span>}
@@ -120,7 +123,7 @@ export function Game({ room, game, you, act, send, leave }: {
         </main>
 
         <aside className="side">
-          <ChainTable game={game} me={me} cart={cart} buying={buying} onCart={addToCart} />
+          <ChainTable game={game} me={me} history={history} cart={cart} buying={buying} onCart={addToCart} />
           <section className="players">
             {game.players.map((p, i) => (
               <PlayerRow
@@ -151,7 +154,7 @@ export function Game({ room, game, you, act, send, leave }: {
                       key={t}
                       className={cx('tile', status !== 'ok' && status, placing && status === 'ok' && 'playable')}
                       disabled={!placing || status !== 'ok'}
-                      title={status === 'dead' ? 'Can never be played: it would merge two safe chains' : status === 'blocked' ? 'Unplayable for now: all seven chains are on the board' : undefined}
+                      title={status === 'dead' ? 'Can never be played: it would merge two startups too big to buy' : status === 'blocked' ? 'Unplayable for now: all seven startups are on the board' : undefined}
                       onClick={() => placeTile(t)}
                       onMouseEnter={() => setHoverTile(t)}
                       onMouseLeave={() => setHoverTile(null)}
@@ -190,10 +193,7 @@ export function Game({ room, game, you, act, send, leave }: {
 
 function Logo() {
   return (
-    <svg className="logo" viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M3 29V15h5v14M10 29V5h7v24M19 29V11h5v18M26 29V18h3v11" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path d="M12 9h3M12 13h3M12 17h3M12 21h3" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
+    <img className="brand-emblem" src="/tres-comas.svg" alt="" width={30} height={30} />
   );
 }
 
@@ -204,15 +204,16 @@ function Status({ game, meIndex }: { game: GameView; meIndex: number }) {
   if (i === meIndex) return <span className="pill turn">Your move</span>;
   const doing: Record<string, string> = {
     place: 'is playing a tile',
-    found: 'is founding a chain',
-    survivor: 'is choosing the survivor',
+    found: 'is founding a startup',
+    survivor: 'is choosing the buyer',
     merge: `is settling ${game.merger ? chainName(game.merger.defuncts[0]) : ''} shares`,
     buy: 'is buying shares',
   };
   return <span className="pill">{name} {doing[game.phase]}</span>;
 }
 
-function ChainTable({ game, me, cart, buying, onCart }: {
+function ChainTable({ game, me, history, cart, buying, onCart }: {
+  history: History;
   game: GameView;
   me: PlayerView | null;
   cart: Partial<Shares>;
@@ -222,11 +223,15 @@ function ChainTable({ game, me, cart, buying, onCart }: {
   const sizes = chainSizes(game.board);
   return (
     <section className="chains">
-      <table>
+      <div className="market-head">
+        <span className="market-title">Startup exchange</span>
+        <span className="market-live"><i />live</span>
+      </div>
+      <table className="market">
         <thead>
           <tr>
-            <th>Chain</th><th title="Tiles on the board">Size</th><th>Price</th><th title="Shares left in the bank">Bank</th>
-            {me && <th>You</th>}<th title="Majority / minority shareholder bonus">Bonus</th>{buying && <th>Buy</th>}
+            <th>Stock</th><th className="num">Price</th><th className="chart-col">Trend</th>
+            {me && <th className="num" title="Your shares">You</th>}<th className="num" title="Majority / minority shareholder bonus if it's acquired">Bonus</th>{buying && <th>Buy</th>}
           </tr>
         </thead>
         <tbody>
@@ -235,21 +240,26 @@ function ChainTable({ game, me, cart, buying, onCart }: {
             const price = priceFor(c, size || 2);
             const bonuses = bonusesFor(game.players, c, price);
             const myBonus = me && bonuses.find((b) => b.id === me.id);
+            const series = history[c];
             return (
               <tr key={c} className={cx(!size && 'inactive')} style={chainStyle(c)}>
                 <td>
                   <span className="chain-name">
-                    <span className={`swatch look-${c}`} />
-                    {chainName(c)}
-                    {size >= SAFE_SIZE && <span className="safe" title="Safe: 11+ tiles, can't be taken over">SAFE</span>}
+                    <span className="logo" style={{ color: CHAIN_INFO[c].ink }} aria-hidden="true">{chainName(c)[0]}</span>
+                    <span className="sym">{CHAIN_INFO[c].ticker}</span>
+                    {size >= SAFE_SIZE && <span className="safe" title="Too big to buy: 11+ tiles, can't be acquired">TOO BIG</span>}
                   </span>
-                  <span className="tier">{TIER_NAMES[TIER[c]]}{!buying && ` · ${CHAIN_INFO[c].look}`}</span>
+                  <span className="tier">{chainName(c)} · {size ? `${size} offices` : 'not listed'} · {TIER_NAMES[TIER[c]]}</span>
                 </td>
-                <td>{size || '—'}</td>
-                <td>{size ? money(priceFor(c, size)) : <span className="muted">{money(price)}</span>}</td>
-                <td>{game.bank[c]}</td>
-                {me && <td className={cx(myBonus && 'leading')} title={myBonus ? `You'd get ${money(myBonus.amount)} if it merged now` : undefined}>{me.shares[c] || ''}</td>}
-                <td className="bonus">{money(price * 10)}<span className="muted"> / {money(price * 5)}</span></td>
+                <td className="num price-cell">
+                  {size
+                    ? <><b key={price} className="px flash">{money(price)}</b><Change series={series} /></>
+                    : <><span className="px muted">{money(price)}</span><span className="chg ipo-pending">IPO price</span></>}
+                  <span className="bank" title="Shares left in the bank">{game.bank[c]} left</span>
+                </td>
+                <td className="chart-col">{size ? <Sparkline series={series} /> : null}</td>
+                {me && <td className={cx('num', myBonus && 'leading')} title={myBonus ? `You'd get ${money(myBonus.amount)} if it were acquired now` : undefined}>{me.shares[c] || ''}</td>}
+                <td className="num bonus">{money(price * 10)}<span className="muted"> / {money(price * 5)}</span></td>
                 {buying && (
                   <td className="stepper">
                     {size > 0 && (
@@ -314,7 +324,7 @@ function Decision({ game, me, myMove, act, cart, cartCost, cartCount }: {
   if (game.phase === 'over') return <p className="muted">The game is over.</p>;
   if (!myMove) {
     if (game.phase === 'merge' && game.merger && me.shares[game.merger.defuncts[0]] > 0) {
-      return <p className="muted">A merger is under way. You'll decide on your {chainName(game.merger.defuncts[0])} shares when it's your turn.</p>;
+      return <p className="muted">An acquisition is under way. You'll decide on your {chainName(game.merger.defuncts[0])} shares when it's your turn.</p>;
     }
     return <p className="muted">Waiting for {game.players[actorIndex(game)].name}…</p>;
   }
@@ -326,7 +336,7 @@ function Decision({ game, me, myMove, act, cart, cartCost, cartCount }: {
     case 'found':
       return (
         <div className="choice">
-          <p><strong>You founded a new chain!</strong> <span className="muted">Pick one. You get a free share.</span></p>
+          <p><strong>You founded a startup!</strong> <span className="muted">Pick which one. You get a free founder's share.</span></p>
           <div className="chain-buttons">
             {game.pending!.options.map((c) => (
               <button key={c} className="btn chain-btn" style={chainStyle(c)} onClick={() => act({ type: 'found', chain: c })}>
@@ -340,7 +350,7 @@ function Decision({ game, me, myMove, act, cart, cartCost, cartCount }: {
     case 'survivor':
       return (
         <div className="choice">
-          <p><strong>The chains are tied.</strong> <span className="muted">Pick the one that survives.</span></p>
+          <p><strong>The startups are tied.</strong> <span className="muted">Pick the one that buys the other out.</span></p>
           <div className="chain-buttons">
             {game.pending!.options.map((c) => (
               <button key={c} className="btn chain-btn" style={chainStyle(c)} onClick={() => act({ type: 'survivor', chain: c })}>{chainName(c)}</button>
@@ -357,7 +367,7 @@ function Decision({ game, me, myMove, act, cart, cartCost, cartCount }: {
       return (
         <div className="choice">
           <p>
-            <strong>Buy up to {MAX_BUY} shares</strong> <span className="muted">with the + buttons in the chain table.</span>
+            <strong>Buy up to {MAX_BUY} shares</strong> <span className="muted">with the + buttons in the startup table.</span>
             {cartCount > 0 && <> Total: <strong>{money(cartCost)}</strong></>}
           </p>
           <div className="row-buttons">
