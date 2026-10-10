@@ -10,7 +10,7 @@ Online board games to play with friends, all in one place. Pick a game, create a
 | **Mercia**: tile laying (Carcassonne-style), 2–5 players | [games/mercia](games/mercia) | https://mercia.tabletop-online.workers.dev | new |
 | **Whispers**: a witch hunt (Werewolf-style hidden roles), 5–16 players | [games/whispers](games/whispers) | https://whispers.tabletop-online.workers.dev | new |
 | **Kintsugi**: tile drafting (Azul-style), 2–4 players | [games/kintsugi](games/kintsugi) | https://kintsugi.tabletop-online.workers.dev | new |
-| **Tres Comas**: Silicon Valley startups and shares (Acquire-style), 2–6 players | [games/tres-comas](games/tres-comas) | https://tres-comas.tabletop-online.workers.dev | in the workshop |
+| **Tres Comas**: Silicon Valley startups and shares (Acquire-style), 2–6 players | [games/tres-comas](games/tres-comas) | https://tres-comas.tabletop-online.workers.dev | new |
 | **Red Harbor**: a Mars-colony economy (Le Havre-style), 2–5 players | [games/red-harbor](games/red-harbor) | https://red-harbor.tabletop-online.workers.dev | in the workshop |
 | **The hall**: the menu of games | [hall](hall) | https://q.tabletop-online.workers.dev | |
 
